@@ -57,5 +57,4 @@ additional_dependencies:
     - matplotlib
   pip:
     - git+https://github.com/NVIDIA/dllogger.git
-    - git+https://github.com/vizfold/attention-viz-demo
  

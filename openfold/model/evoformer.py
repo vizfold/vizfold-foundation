@@ -503,16 +503,30 @@ def save_all_topk_from_recent_attention(save_dir, triangle_residue_idx, top_k=50
     
     Args:
         save_dir (str): Where to store the txt files.
+        triangle_residue_idx (int): Residue index for triangle start/end attention.
         top_k (int): How many top values to save per head.
     """
     os.makedirs(save_dir, exist_ok=True)
 
-    for k in ATTENTION_METADATA.recent_attention.keys():
+    for k, v in ATTENTION_METADATA.recent_attention.items():
         attn_type, layer_idx = parse_attention_metadata_key(k)
 
         if attn_type is not None and layer_idx >= 0:
+            # Handle chunked attention
+            if isinstance(v, list) and isinstance(v[0], np.ndarray):
+                try:
+                    v_concat = v[0] if len(v) == 1 else np.concatenate(v, axis=0)
+                except Exception as e:
+                    print(f"[WARNING] Could not concatenate attention for {k}: {e}")
+                    continue
+            else:
+                v_concat = v
+
+            # Temporary dictionary to pass into `save_attention_topk`
+            temp_dict = {k: v_concat}
+
             save_attention_topk(
-                attention_dict=ATTENTION_METADATA.recent_attention,
+                attention_dict=temp_dict,
                 save_dir=save_dir,
                 layer_name=k,
                 layer_idx=layer_idx,

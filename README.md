@@ -37,9 +37,9 @@ from pymol.cgo import CYLINDER, SPHERE
 
 ---
 
-## Interactive Demo: `viz_attention_demo.ipynb`
+## Interactive Demo: `viz_attention_demo_base.ipynb`
 
-The notebook `viz_attention_demo.ipynb` demonstrates the full visualization pipeline using OpenFold.
+The notebook `viz_attention_demo_base.ipynb` demonstrates the full visualization pipeline using OpenFold.
 
 It performs the following steps:
 
@@ -55,6 +55,8 @@ We focus on two attention types:
 - **Triangle Start Attention**
 
 > The **thickness of the lines** (in both arc diagrams and 3D renderings) indicates the **strength of the attention score**.
+
+(If using Cybershuttle, then please use `viz_attention_demo.ipynb`)
 
 ---
 

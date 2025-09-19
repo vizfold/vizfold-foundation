@@ -78,7 +78,8 @@ class AlphaFold(nn.Module):
         super(AlphaFold, self).__init__()
 
         self.globals = config.globals
-        self.globals.chunk_size = None # TURNING OFF CHUNK SIZE FOR CONSISTENT RESULTS!
+        if not getattr(self.globals, "enable_chunking", False):
+            self.globals.chunk_size = None  # Disable chunking for consistent results
         self.config = config.model
         self.template_config = self.config.template
         self.extra_msa_config = self.config.extra_msa

@@ -260,9 +260,16 @@ def main(args):
 
     tag_list = []
     seq_list = []
-    for fasta_file in list_files_with_extensions(args.fasta_dir, (".fasta", ".fa")):
+    if os.path.isfile(args.fasta_dir):
+        fasta_files = [args.fasta_dir]
+    else:
+        fasta_files = [
+            os.path.join(args.fasta_dir, f)
+            for f in list_files_with_extensions(args.fasta_dir, (".fasta", ".fa"))
+        ]
+
+    for fasta_path in fasta_files:
         # Gather input sequences
-        fasta_path = os.path.join(args.fasta_dir, fasta_file)
         with open(fasta_path, "r") as fp:
             data = fp.read()
 
@@ -289,6 +296,7 @@ def main(args):
         raise ValueError(
             '`openfold_checkpoint_path` was specified, but no OpenFold checkpoints are available for multimer mode')
 
+    config.globals.enable_chunking = args.enable_chunking
     config.attn_map_dir = args.attn_map_dir
     config.num_recycles_save = args.num_recycles_save
     attention_config = {
@@ -518,6 +526,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--triangle_residue_idx", default=None, type=int  # for demo visualizations we need to select a residue idx
     )
+    parser.add_argument('--enable_chunking', action='store_true', help="Enable chunking (by default, chunk_size is set to None)")
     add_data_args(parser)
     args = parser.parse_args()
     print('args: ')

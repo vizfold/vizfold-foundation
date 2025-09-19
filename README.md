@@ -18,11 +18,22 @@ This is a lightweight extension of [OpenFold](https://github.com/aqlaboratory/op
 
 ## Installation
 
-This repo assumes you have already installed OpenFold and its dependencies, or you are using CyberShuttle (see `cybershuttle.yml`)
+This repo assumes you have already installed [OpenFold and its dependencies](https://openfold.readthedocs.io/en/latest/Installation.html), or you are using CyberShuttle (see `cybershuttle.yml`)
 You will also need:
 - `PyMOL` (open-source version is sufficient)
 - `matplotlib`, `numpy`, `scipy`, `pandas`
 - `biopython` (for sequence parsing)
+
+You can also install the full set of dendencies (including those for OpenFold) from our `cybershuttle.yml` file directly.
+Beyond confirming the proper installation of OpenFold, you can test the specific dependendices for our repo by using:
+```
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import csv
+from pymol import cmd
+from pymol.cgo import CYLINDER, SPHERE
+```
 
 ---
 

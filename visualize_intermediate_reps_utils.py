@@ -1,44 +1,33 @@
 """
-Utility functions for extracting and visualizing intermediate representations 
-from OpenFold's deep neural network.
+Intermediate representation visualization for OpenFold.
 
-This module provides tools to:
-- Extract MSA (Multiple Sequence Alignment) representations
-- Extract Pair representations  
-- Extract Structure module outputs
-- Visualize these representations as heatmaps and line plots
-
-Author: Working on Issue #8
+Extract and visualize MSA, Pair, and Structure representations from OpenFold's 
+48-layer network. Supports layer-by-layer analysis and various visualization modes.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import os
-from typing import Dict, List, Tuple, Optional
 
 
 class IntermediateRepresentations:
-    """Storage for intermediate layer representations during forward pass."""
     def __init__(self):
-        self.msa_reps = {}  # layer_idx -> tensor
-        self.pair_reps = {}  # layer_idx -> tensor
-        self.single_reps = {}  # layer_idx -> tensor
+        self.msa_reps = {}
+        self.pair_reps = {}
+        self.single_reps = {}
         self.enabled = False
     
     def clear(self):
-        """Clear all stored representations."""
         self.msa_reps = {}
         self.pair_reps = {}
         self.single_reps = {}
     
     def enable(self):
-        """Enable collection of intermediate representations."""
         self.enabled = True
         self.clear()
     
     def disable(self):
-        """Disable collection and clear storage."""
         self.enabled = False
         self.clear()
 
@@ -46,111 +35,44 @@ class IntermediateRepresentations:
 INTERMEDIATE_REPS = IntermediateRepresentations()
 
 
-def extract_msa_representations(
-    model_output: Dict,
-    layer_indices: Optional[List[int]] = None
-) -> Dict[int, torch.Tensor]:
-    """
-    Extract MSA representation tensors from OpenFold forward pass.
-    
-    Args:
-        model_output: Dictionary containing model outputs including intermediate reps
-                     OR None if using global INTERMEDIATE_REPS storage
-        layer_indices: Which layers to extract (None = all layers)
-        
-    Returns:
-        Dictionary mapping layer index to MSA tensor
-        Shape of each tensor: (n_seq, n_res, c_m) where:
-            - n_seq: number of sequences in MSA
-            - n_res: number of residues
-            - c_m: MSA channel dimension (typically 256)
-    """
+def extract_msa_representations(model_output, layer_indices=None):
+    """Extract MSA representations from model output or stored layers."""
     if model_output is not None and "msa" in model_output:
-        final_msa = model_output["msa"]
-        return {-1: final_msa}
+        return {-1: model_output["msa"]}
     
     if not INTERMEDIATE_REPS.msa_reps:
-        raise ValueError(
-            "No MSA representations found. Make sure to:\n"
-            "1. Call INTERMEDIATE_REPS.enable() before model forward pass\n"
-            "2. Register hooks on the model (see register_evoformer_hooks)\n"
-            "3. Run the model forward pass"
-        )
+        raise ValueError("No MSA representations found. Enable hooks first.")
     
     if layer_indices is None:
         return INTERMEDIATE_REPS.msa_reps.copy()
-    else:
-        return {
-            idx: INTERMEDIATE_REPS.msa_reps[idx]
-            for idx in layer_indices
-            if idx in INTERMEDIATE_REPS.msa_reps
-        }
-
-
-def extract_pair_representations(
-    model_output: Dict,
-    layer_indices: Optional[List[int]] = None
-) -> Dict[int, torch.Tensor]:
-    """
-    Extract Pair representation tensors from OpenFold forward pass.
     
-    Args:
-        model_output: Dictionary containing model outputs including intermediate reps
-                     OR None if using global INTERMEDIATE_REPS storage
-        layer_indices: Which layers to extract (None = all layers)
-        
-    Returns:
-        Dictionary mapping layer index to Pair tensor
-        Shape of each tensor: (n_res, n_res, c_z) where:
-            - n_res: number of residues
-            - c_z: Pair channel dimension (typically 128)
-    """
+    return {idx: INTERMEDIATE_REPS.msa_reps[idx] 
+            for idx in layer_indices 
+            if idx in INTERMEDIATE_REPS.msa_reps}
+
+
+def extract_pair_representations(model_output, layer_indices=None):
+    """Extract Pair representations from model output or stored layers."""
     if model_output is not None and "pair" in model_output:
-        final_pair = model_output["pair"]
-        return {-1: final_pair}
+        return {-1: model_output["pair"]}
     
     if not INTERMEDIATE_REPS.pair_reps:
-        raise ValueError(
-            "No Pair representations found. Make sure to:\n"
-            "1. Call INTERMEDIATE_REPS.enable() before model forward pass\n"
-            "2. Register hooks on the model (see register_evoformer_hooks)\n"
-            "3. Run the model forward pass"
-        )
+        raise ValueError("No Pair representations found. Enable hooks first.")
     
     if layer_indices is None:
         return INTERMEDIATE_REPS.pair_reps.copy()
-    else:
-        return {
-            idx: INTERMEDIATE_REPS.pair_reps[idx]
-            for idx in layer_indices
-            if idx in INTERMEDIATE_REPS.pair_reps
-        }
-
-
-def extract_structure_representations(
-    model_output: Dict
-) -> Dict[str, torch.Tensor]:
-    """
-    Extract Structure module outputs from OpenFold forward pass.
     
-    Args:
-        model_output: Dictionary containing model outputs
-        
-    Returns:
-        Dictionary with keys:
-            - 'backbone_frames': Rigid body transformations for backbone (all iterations)
-            - 'angles': Sidechain torsion angles (all iterations)
-            - 'positions': Atomic positions (all iterations)
-            - 'final_positions': Final atomic positions after last iteration
-    """
+    return {idx: INTERMEDIATE_REPS.pair_reps[idx] 
+            for idx in layer_indices 
+            if idx in INTERMEDIATE_REPS.pair_reps}
+
+
+def extract_structure_representations(model_output):
+    """Extract structure module outputs from model."""
     if model_output is None or "sm" not in model_output:
-        raise ValueError(
-            "No structure module outputs found in model_output. "
-            "Make sure model_output contains 'sm' key from structure module."
-        )
+        raise ValueError("No structure module outputs found.")
     
     sm_output = model_output["sm"]
-    
     result = {
         'backbone_frames': sm_output['frames'],
         'angles': sm_output['angles'],
@@ -164,46 +86,28 @@ def extract_structure_representations(
     return result
 
 
-def plot_msa_representation_heatmap(
-    msa_tensor: torch.Tensor,
-    layer_idx: int,
-    save_path: str,
-    aggregate_method: str = 'mean',
-    cmap: str = 'viridis'
-) -> plt.Figure:
-    """
-    Visualize MSA representation as a heatmap.
-    
-    Args:
-        msa_tensor: Shape (n_seq, n_res, c_m)
-        layer_idx: Which layer this representation is from
-        save_path: Where to save the figure
-        aggregate_method: How to aggregate over channels ('mean', 'max', 'norm')
-        cmap: Matplotlib colormap name
-        
-    Returns:
-        Matplotlib figure object
-    """
+def plot_msa_representation_heatmap(msa_tensor, layer_idx, save_path, 
+                                   aggregate_method='mean', cmap='viridis'):
+    """Create MSA heatmap visualization."""
     msa_2d = aggregate_channels(msa_tensor, method=aggregate_method, axis=-1)
     n_seq, n_res = msa_2d.shape
     
     fig, ax = plt.subplots(figsize=(max(10, n_res // 10), max(6, n_seq // 20)))
     
     im = ax.imshow(msa_2d, aspect='auto', cmap=cmap, interpolation='nearest')
-    
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label(f'{aggregate_method.capitalize()} activation', rotation=270, labelpad=20)
+    cbar.set_label(f'{aggregate_method.capitalize()} activation', 
+                   rotation=270, labelpad=20)
     
     ax.set_xlabel('Residue Position', fontsize=12)
     ax.set_ylabel('MSA Sequence', fontsize=12)
     ax.set_title(f'MSA Representation - Layer {layer_idx}\n'
                  f'Aggregation: {aggregate_method}',
                  fontsize=14, fontweight='bold')
-    
     ax.grid(False)
     
-    os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
-    
+    os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', 
+                exist_ok=True)
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"Saved MSA heatmap to {save_path}")
@@ -211,32 +115,14 @@ def plot_msa_representation_heatmap(
     return fig
 
 
-def plot_pair_representation_heatmap(
-    pair_tensor: torch.Tensor,
-    layer_idx: int,
-    save_path: str,
-    aggregate_method: str = 'mean',
-    cmap: str = 'RdBu_r'
-) -> plt.Figure:
-    """
-    Visualize Pair representation as a contact-map-like heatmap.
-    
-    Args:
-        pair_tensor: Shape (n_res, n_res, c_z)
-        layer_idx: Which layer this representation is from
-        save_path: Where to save the figure
-        aggregate_method: How to aggregate over channels ('mean', 'max', 'norm')
-        cmap: Matplotlib colormap name
-        
-    Returns:
-        Matplotlib figure object
-    """
+def plot_pair_representation_heatmap(pair_tensor, layer_idx, save_path,
+                                    aggregate_method='mean', cmap='RdBu_r'):
+    """Create Pair representation heatmap."""
     pair_2d = aggregate_channels(pair_tensor, method=aggregate_method, axis=-1)
     n_res = pair_2d.shape[0]
     
     fig, ax = plt.subplots(figsize=(10, 9))
     
-    # Center diverging colormaps at zero for better visualization
     if 'RdBu' in cmap:
         vmax = np.max(np.abs(pair_2d))
         vmin = -vmax
@@ -245,23 +131,21 @@ def plot_pair_representation_heatmap(
     
     im = ax.imshow(pair_2d, aspect='equal', cmap=cmap, 
                    interpolation='nearest', vmin=vmin, vmax=vmax)
-    
-    # Add diagonal reference line
     ax.plot([0, n_res-1], [0, n_res-1], 'k--', alpha=0.3, linewidth=0.5)
     
     cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(f'{aggregate_method.capitalize()} activation', rotation=270, labelpad=20)
+    cbar.set_label(f'{aggregate_method.capitalize()} activation', 
+                   rotation=270, labelpad=20)
     
     ax.set_xlabel('Residue i', fontsize=12)
     ax.set_ylabel('Residue j', fontsize=12)
     ax.set_title(f'Pair Representation - Layer {layer_idx}\n'
                  f'Aggregation: {aggregate_method}',
                  fontsize=14, fontweight='bold')
-    
     ax.grid(False)
     
-    os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
-    
+    os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', 
+                exist_ok=True)
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     print(f"Saved Pair heatmap to {save_path}")
@@ -269,24 +153,9 @@ def plot_pair_representation_heatmap(
     return fig
 
 
-def plot_representation_evolution(
-    tensors_across_layers: Dict[int, torch.Tensor],
-    residue_idx: int,
-    save_path: str,
-    rep_type: str = 'msa'
-) -> plt.Figure:
-    """
-    Show how a specific residue's representation changes across layers.
-    
-    Args:
-        tensors_across_layers: Dictionary mapping layer index to tensor
-        residue_idx: Which residue to track
-        save_path: Where to save the figure
-        rep_type: 'msa' or 'pair'
-        
-    Returns:
-        Matplotlib figure object
-    """
+def plot_representation_evolution(tensors_across_layers, residue_idx, save_path, 
+                                 rep_type='msa'):
+    """Show how a residue's representation evolves across layers."""
     layer_indices = sorted(tensors_across_layers.keys())
     magnitudes = []
     

@@ -45,15 +45,20 @@ print("\nCreating visualizations...")
 output_dir = "demo_outputs"
 os.makedirs(output_dir, exist_ok=True)
 
+# Enhanced MSA heatmap with highlighting
 fig = plot_msa_representation_heatmap(msa_final[-1], -1, 
-                                     f"{output_dir}/msa_final.png")
+                                     f"{output_dir}/msa_final.png",
+                                     highlight_residue=50, custom_ticks=[0, 25, 50, 75])
 plt.close(fig)
-print("  MSA heatmap saved")
+print("  Enhanced MSA heatmap saved")
 
+# Enhanced pair heatmap with contact map overlay
+mock_contact_map = generate_mock_contact_map(n_res, contact_probability=0.15, seed=42)
 fig = plot_pair_representation_heatmap(pair_final[-1], -1,
-                                      f"{output_dir}/pair_final.png")
+                                      f"{output_dir}/pair_final.png",
+                                      contact_map=mock_contact_map, show_correlation=True)
 plt.close(fig)
-print("  Pair heatmap saved")
+print("  Enhanced Pair heatmap with contact overlay saved")
 
 # Layer-by-layer analysis
 print("\nCreating mock layer data...")
@@ -66,10 +71,13 @@ for i in range(5):
     noise = torch.randn_like(pair_tensor) * 0.1
     pair_layers[i] = pair_tensor + noise
 
+# Enhanced evolution plot with multiple residues and confidence intervals
 fig = plot_representation_evolution(msa_layers, 50, 
-                                   f"{output_dir}/evolution.png", 'msa')
+                                   f"{output_dir}/evolution.png", 'msa',
+                                   multiple_residues=[10, 25, 50, 75, 90],
+                                   show_confidence=True, show_differences=True)
 plt.close(fig)
-print("  Evolution plot saved")
+print("  Enhanced evolution plot with multiple residues saved")
 
 # Channel analysis
 fig = plot_channel_specific_heatmap(msa_tensor, 0, 64,

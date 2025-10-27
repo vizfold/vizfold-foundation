@@ -110,3 +110,11 @@ This project is licensed under the [Apache License 2.0](https://www.apache.org/l
 See the [LICENSE](./LICENSE) file for details.
 
 ---
+
+## 🚧 Work in Progress: Issue #8 - Intermediate Layer Representations
+
+This fork is actively working on adding visualization support for intermediate layer representations (MSA, Pair, and Structure module outputs) from OpenFold's 48-layer network.
+
+**Progress tracking:** See [Issue #8](https://github.com/vizfold/attention-viz-demo/issues/8)
+
+---

@@ -1,120 +1,95 @@
-# OpenFold-based Attention Visualization Demo
+# OpenFold Intermediate Representation Visualization
 
-This is a lightweight extension of [OpenFold](https://github.com/aqlaboratory/openfold) that enables interactive visualization of attention mechanisms in protein structure prediction. It provides tools to render MSA row and Triangle attention scores as:
+A comprehensive toolkit for visualizing intermediate representations from OpenFold's 48-layer Evoformer network. Extract and analyze MSA, Pair, and Structure module outputs with advanced visualization techniques.
 
-- Arc diagrams (sequence space)
-- 3D PyMOL overlays (structure space)
+## Features
 
----
+- **MSA Representations**: Heatmaps, evolution plots, multi-residue analysis
+- **Pair Representations**: Contact map overlays, correlation analysis
+- **Structure Module**: Backbone frames, angles, RMSD tracking
+- **Multi-Layer Analysis**: Stratified sampling, convergence analysis, layer importance ranking
+- **Comprehensive Reports**: PDF generation, clustering analysis
 
-## Key Features
+## Quick Start
 
-- Compatible with OpenFold outputs (`.pdb`, attention text dumps)
-- Support for layer- and head-specific visualizations
-- Integrated residue highlighting
-- Notebook-friendly and HPC-friendly workflow
+```bash
+# Install dependencies
+pip install torch numpy matplotlib scipy
 
----
+# Run demo
+python demo_usage.py
 
-## Installation
-
-This repo assumes you have already installed [OpenFold and its dependencies](https://openfold.readthedocs.io/en/latest/Installation.html), or you are using CyberShuttle (see `cybershuttle.yml`)
-You will also need:
-- `PyMOL` (open-source version is sufficient)
-- `matplotlib`, `numpy`, `scipy`, `pandas`
-- `biopython` (for sequence parsing)
-
-You can also install the full set of dendencies (including those for OpenFold) from our `cybershuttle.yml` file directly.
-Beyond confirming the proper installation of OpenFold, you can test the specific dependendices for our repo by using:
-```
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import csv
-from pymol import cmd
-from pymol.cgo import CYLINDER, SPHERE
+# Interactive analysis
+jupyter notebook OpenFold_Comprehensive_Analysis.ipynb
 ```
 
----
+## Core Functions
 
-## Interactive Demo: `viz_attention_demo_base.ipynb`
+### Basic Visualizations
+- `plot_msa_representation_heatmap()` - MSA heatmaps with residue highlighting
+- `plot_pair_representation_heatmap()` - Pair representations with contact overlays
+- `plot_representation_evolution()` - Layer-by-layer evolution tracking
 
-The notebook `viz_attention_demo_base.ipynb` demonstrates the full visualization pipeline using OpenFold.
+### Advanced Analysis
+- `plot_multilayer_evolution()` - Evolution across all 48 layers
+- `plot_stratified_layer_comparison()` - Side-by-side layer comparisons
+- `plot_layer_convergence_analysis()` - Convergence metrics
+- `plot_structure_module_evolution()` - Structure module analysis
 
-It performs the following steps:
+### Utility Functions
+- `stratified_layer_sampling()` - Smart layer selection strategies
+- `compute_layer_importance_metrics()` - Layer importance ranking
+- `create_comprehensive_visualization_report()` - Full analysis pipeline
 
-1. **Runs inference** using OpenFold with precomputed alignments
-2. **Extracts top-k residue–residue attention scores** from each layer and head
-3. **Saves these scores** to text files
-4. **Visualizes attention**:
-   - As **arc diagrams** (residue–residue attention on the sequence)
-   - As **3D PyMOL overlays** (on the predicted structure)
+## Usage Examples
 
-We focus on two attention types:
-- **MSA Row Attention**
-- **Triangle Start Attention**
+```python
+from visualize_intermediate_reps_utils import *
 
-> The **thickness of the lines** (in both arc diagrams and 3D renderings) indicates the **strength of the attention score**.
+# Extract representations from OpenFold output
+msa_reps = extract_msa_representations(model_output)
+pair_reps = extract_pair_representations(model_output)
 
-(If using Cybershuttle, then please use `viz_attention_demo.ipynb`)
+# Create visualizations
+plot_msa_representation_heatmap(msa_reps[-1], -1, "msa_heatmap.png")
+plot_multilayer_evolution(msa_reps, [10, 50, 100], "evolution.png")
 
----
+# Comprehensive analysis
+create_comprehensive_visualization_report(msa_reps, structure_outputs)
+```
 
-### MSA Row Attention (Layer 47, Protein 6KWC)
+## HPC Setup (PACE ICE)
 
-- Shows pairwise attention between residues as inferred from multiple sequence alignments
-- Visualized across all attention heads at a selected model layer
+For running on PACE ICE cluster with real OpenFold data:
 
-Arc diagram (Head 2):
+```bash
+# Get GPU node
+salloc -p ice-gpu --gres=gpu:1 --cpus-per-task=8 --mem=32G -t 02:00:00
 
-![msa_row_arc](./outputs/attention_images_6KWC_demo_tri_18/msa_row_attention_plots/msa_row_head_2_layer_47_6KWC_arc.png)
+# Clone and setup
+git clone https://github.com/vizfold/attention-viz-demo.git ~/scratch/attention-viz-demo
+cd ~/scratch/attention-viz-demo
 
-All heads subplot:
+# Install OpenFold and dependencies
+module load mamba
+mamba env create -p ~/scratch/envs/openfold_env -f environment.yml
+conda activate ~/scratch/envs/openfold_env
 
-![msa_row_subplot](./outputs/attention_images_6KWC_demo_tri_18/msa_row_attention_plots/msa_row_heads_layer_47_6KWC_subplot.png)
+# Start Jupyter
+jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+```
 
----
+## Files
 
-### Triangle Start Attention (Layer 47, Residue 18)
-
-- Focuses on attention **from a single residue to others**, as part of triangle-based geometric reasoning
-- The **selected residue is highlighted**:
-  - In arc diagrams: using a **blue label**
-  - In 3D visualizations: using a **sphere**
-
-Arc diagram (Head 0):
-
-![triangle_start_arc](./outputs/attention_images_6KWC_demo_tri_18/tri_start_attention_plots/tri_start_res_18_head_0_layer_47_6KWC_arc.png)
-
-All heads subplot:
-
-![triangle_start_subplot](./outputs/attention_images_6KWC_demo_tri_18/tri_start_attention_plots/triangle_start_residue_18_layer_47_6KWC_subplot.png)
-
-
-## Acknowledgements
-
-This project is based on [**OpenFold**](https://github.com/aqlaboratory/openfold), an open-source reimplementation of AlphaFold, distributed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-We have extended OpenFold with:
-- Custom visualization tools for attention maps (3D + arc diagrams)
-- Demo scripts and configuration for interactive analysis
-- Modifications to the inference pipeline for simplified usage
-
-This repository includes source code originally developed by the OpenFold contributors. All original rights and attributions are retained in accordance with the Apache 2.0 License.
-
----
+- `visualize_intermediate_reps_utils.py` - Core visualization functions
+- `demo_usage.py` - Basic demo script
+- `OpenFold_Comprehensive_Analysis.ipynb` - Interactive Jupyter notebook
+- `requirements_visualization.txt` - Minimal dependencies
 
 ## License
 
-This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
-See the [LICENSE](./LICENSE) file for details.
+Apache License 2.0 - See [LICENSE](./LICENSE) for details.
 
----
+## Acknowledgments
 
-## 🚧 Work in Progress: Issue #8 - Intermediate Layer Representations
-
-This fork is actively working on adding visualization support for intermediate layer representations (MSA, Pair, and Structure module outputs) from OpenFold's 48-layer network.
-
-**Progress tracking:** See [Issue #8](https://github.com/vizfold/attention-viz-demo/issues/8)
-
----
+Based on [OpenFold](https://github.com/aqlaboratory/openfold) - an open-source AlphaFold implementation.

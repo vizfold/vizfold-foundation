@@ -1,21 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
 .vscode/
 .idea/
-__pycache__/
-*.egg-info
-build
-dist
+*.swp
+*.swo
 
-# files from script downloads
-data
-openfold/resources/
-tests/test_data/
-cutlass/
-*.txt
-*.png
-*.pdb
-*.json
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Large output files
+demo_outputs/
+notebook_outputs/
+outputs/
+*.pt
 *.pkl
-*.fasta
-*.sto
-*.a3m
-*.hhr
+*.h5
+*.hdf5
+
+# Large image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

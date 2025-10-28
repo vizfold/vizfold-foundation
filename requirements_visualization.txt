@@ -1,0 +1,19 @@
+# Minimal Requirements for OpenFold Visualization Notebook
+# Install with: pip install -r requirements_visualization.txt
+
+# Core dependencies
+torch>=2.0.0
+numpy>=1.23.0
+matplotlib>=3.5.0
+scipy>=1.9.0
+
+# Jupyter support
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Optional for better performance
+pillow>=9.0.0
+
+# Note: For full OpenFold support, use environment.yml instead:
+#   conda env create -f environment.yml
+

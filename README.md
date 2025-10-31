@@ -103,4 +103,10 @@ We have extended OpenFold with:
 This repository includes source code originally developed by the OpenFold contributors. All original rights and attributions are retained in accordance with the Apache 2.0 License.
 
 ---
-  
+
+## License
+
+This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
+See the [LICENSE](./LICENSE) file for details.
+
+---

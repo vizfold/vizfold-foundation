@@ -31,7 +31,7 @@ def reconstruct_matrix(connections, seq_len):
     return matrix
 
 
-def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="msa_row", output_html="heatmap_grid.html"):
+def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="msa_row", output_html="heatmap_grid.html", threshold=None):
     heads = load_all_heads(attention_file)
     num_heads = len(heads)
 
@@ -42,15 +42,22 @@ def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="m
     cols = min(4, num_heads)
     rows = (num_heads + cols - 1) // cols
 
+    # Calculate global and per-head min/max values, respecting the threshold
     all_weights = [w for head_idx in sorted(heads.keys()) for _, _, w in heads[head_idx]]
+    if threshold is not None:
+        all_weights = [w for w in all_weights if w >= threshold]
+    
     global_min = min(all_weights) if all_weights else 0
     global_max = max(all_weights) if all_weights else 1
+
+    per_head_mins = []
+    per_head_maxs = []
 
     fig = make_subplots(
         rows=rows, cols=cols,
         subplot_titles=[f"Head {i}" for i in sorted(heads.keys())],
         horizontal_spacing=0.05,
-        vertical_spacing=0.08
+        vertical_spacing=0.15
     )
 
     for idx, head_idx in enumerate(sorted(heads.keys())):
@@ -58,6 +65,18 @@ def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="m
         col = idx % cols + 1
 
         matrix = reconstruct_matrix(heads[head_idx], seq_len)
+        if threshold is not None:
+            matrix[matrix < threshold] = np.nan  # Use nan to hide values below threshold
+
+        head_connections = heads[head_idx]
+        head_weights = [w for _, _, w in head_connections]
+        if threshold is not None:
+            head_weights = [w for w in head_weights if w >= threshold]
+
+        head_min = min(head_weights) if head_weights else 0
+        head_max = max(head_weights) if head_weights else 1
+        per_head_mins.append(head_min)
+        per_head_maxs.append(head_max)
 
         fig.add_trace(
             go.Heatmap(
@@ -74,12 +93,38 @@ def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="m
         fig.update_xaxes(title_text="Residue", row=row, col=col, showticklabels=False)
         fig.update_yaxes(title_text="Residue", row=row, col=col, showticklabels=False)
 
+    title_text = f"{attention_type.upper()} Layer {layer_idx} - All Heads"
+    if threshold is not None:
+        title_text += f" (Threshold > {threshold})"
+
     fig.update_layout(
-        title_text=f"{attention_type.upper()} Layer {layer_idx} - All Heads (Globally Normalized)",
+        title_text=title_text,
         title_x=0.5,
-        height=300 * rows,
+        height=350 * rows,
         width=1200,
-        showlegend=False
+        showlegend=False,
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                x=0.6,
+                xanchor="left",
+                y=1.15,
+                yanchor="top",
+                buttons=list([
+                    dict(
+                        label="Global Norm",
+                        method="restyle",
+                        args=[{"zmin": [global_min], "zmax": [global_max], "showscale": [True] + [False] * (num_heads - 1)}],
+                    ),
+                    dict(
+                        label="Per-Head Norm",
+                        method="restyle",
+                        args=[{"zmin": per_head_mins, "zmax": per_head_maxs, "showscale": [False] * num_heads}],
+                    ),
+                ]),
+            )
+        ]
     )
 
     fig.write_html(output_html)
@@ -87,7 +132,7 @@ def create_heatmap_grid(attention_file, seq_len, layer_idx=47, attention_type="m
     return fig
 
 
-def visualize_layer_attention(attention_dir, seq_len, layer_idx=47, attention_type="msa_row", residue_idx=None, output_dir="./outputs/attention_heatmaps"):
+def visualize_layer_attention(attention_dir, seq_len, layer_idx=47, attention_type="msa_row", residue_idx=None, output_dir="./outputs/attention_heatmaps", threshold=None):
     os.makedirs(output_dir, exist_ok=True)
 
     if attention_type == "msa_row":
@@ -106,25 +151,42 @@ def visualize_layer_attention(attention_dir, seq_len, layer_idx=47, attention_ty
         return None
 
     print(f"Processing: {attention_file}")
-    return create_heatmap_grid(attention_file, seq_len, layer_idx, attention_type, output_html)
+    return create_heatmap_grid(attention_file, seq_len, layer_idx, attention_type, output_html, threshold)
 
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Visualize attention heatmap grids for OpenFold.")
+    
+    parser.add_argument("--attention_dir", type=str, required=True, 
+                        help="Directory containing attention files.")
+    parser.add_argument("--output_dir", type=str, default="./outputs/attention_heatmaps", 
+                        help="Directory to save the output HTML files.")
+    parser.add_argument("--seq_len", type=int, required=True, 
+                        help="Sequence length.")
+    parser.add_argument("--layer_idx", type=int, required=True, 
+                        help="Layer index to visualize.")
+    parser.add_argument("--attention_type", type=str, required=True, choices=["msa_row", "triangle_start"],
+                        help="Type of attention to visualize.")
+    parser.add_argument("--residue_idx", type=int, default=None,
+                        help="Residue index, required for 'triangle_start' attention type.")
+    parser.add_argument("--threshold", type=float, default=None,
+                        help="Attention weight threshold. Weights below this value will not be displayed.")
+
+    args = parser.parse_args()
+
+    if args.attention_type == "triangle_start" and args.residue_idx is None:
+        parser.error("--residue_idx is required when attention_type is 'triangle_start'")
+
+    visualize_layer_attention(
+        attention_dir=args.attention_dir,
+        seq_len=args.seq_len,
+        layer_idx=args.layer_idx,
+        attention_type=args.attention_type,
+        residue_idx=args.residue_idx,
+        output_dir=args.output_dir,
+        threshold=args.threshold
+    )
 
 if __name__ == "__main__":
-    attention_dir = "./outputs/attention_files_6KWC_demo_tri_18"
-    seq_len = 400
-    layer_idx = 47
-
-    visualize_layer_attention(
-        attention_dir=attention_dir,
-        seq_len=seq_len,
-        layer_idx=layer_idx,
-        attention_type="msa_row"
-    )
-
-    visualize_layer_attention(
-        attention_dir=attention_dir,
-        seq_len=seq_len,
-        layer_idx=layer_idx,
-        attention_type="triangle_start",
-        residue_idx=18
-    )
+    main()

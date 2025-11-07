@@ -1,4 +1,7 @@
+import argparse
 import os
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -147,41 +150,61 @@ def generate_arc_diagrams(
                 pngs.append(out_png)
 
 
+def _parse_comma_separated_ints(raw):
+    if raw is None or raw.strip() == "":
+        return None
+    return [int(x.strip()) for x in raw.split(',') if x.strip()]
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description="Generate arc diagram plots for OpenFold attention heads.")
+    parser.add_argument("--attention-dir", type=Path, required=True, help="Directory that contains attention text files.")
+    parser.add_argument("--fasta-path", type=Path, required=True, help="Path to the FASTA sequence.")
+    parser.add_argument("--output-dir", type=Path, required=True, help="Directory to write arc plots.")
+    parser.add_argument("--protein", type=str, required=True, help="Protein identifier for filenames.")
+    parser.add_argument("--attention-type", type=str, default="msa_row", choices=["msa_row", "triangle_start", "both"], help="Attention family to visualize.")
+    parser.add_argument("--layer-idx", type=int, default=47, help="Layer index to visualize.")
+    parser.add_argument("--top-k", type=int, default=50, help="Number of edges to keep per head.")
+    parser.add_argument("--residue-indices", type=str, default="", help="Comma separated residue indices for triangle attention.")
+    return parser.parse_args()
+
+
+def _main():
+    args = _parse_args()
+    residue_indices = _parse_comma_separated_ints(args.residue_indices)
+
+    residue_seq = parse_fasta_sequence(str(args.fasta_path))
+    output_dir = args.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.attention_type in ("msa_row", "both"):
+        print('Making visuals for MSA Row Attention...')
+        generate_arc_diagrams(
+            attention_dir=str(args.attention_dir),
+            residue_sequence=residue_seq,
+            output_dir=str(output_dir / "msa_row"),
+            protein=args.protein,
+            attention_type="msa_row",
+            top_k=args.top_k,
+            layer_idx=args.layer_idx,
+        )
+
+    if args.attention_type in ("triangle_start", "both"):
+        if residue_indices is None:
+            raise ValueError("--residue-indices is required when rendering triangle_start attention")
+
+        print('Making visuals for Triangle Start Attention...')
+        generate_arc_diagrams(
+            attention_dir=str(args.attention_dir),
+            residue_sequence=residue_seq,
+            output_dir=str(output_dir / "triangle_start"),
+            protein=args.protein,
+            attention_type="triangle_start",
+            residue_indices=residue_indices,
+            top_k=args.top_k,
+            layer_idx=args.layer_idx,
+        )
+
+
 if __name__ == "__main__":
-    topk = 50
-    layer_idx = 47
-    attention_dir = "/projects/bekh/thayes/demo_attn_saves/6KWC_demo"
-    msa_output_dir = "/u/thayes/vizfold/demo_plots_msa_row"
-    tri_output_dir = "/u/thayes/vizfold/demo_plots_tri_start"
-    fasta_path = "./examples/monomer/fasta_dir/6kwc.fasta"
-    protein = '6KWC'
-
-    # Load sequence
-    residue_seq = parse_fasta_sequence(fasta_path)
-
-    # For MSA row
-    print('Making visuals for MSA Row Attention...')
-    generate_arc_diagrams(
-        attention_dir=attention_dir,
-        residue_sequence=residue_seq,
-        output_dir=msa_output_dir,
-        protein=protein,
-        attention_type="msa_row",
-        top_k=topk,
-        layer_idx=layer_idx
-    )
-
-    # For Triangle Start
-    print('Making visuals for Triangle Start Attention...')
-    generate_arc_diagrams(
-        attention_dir=attention_dir,
-        residue_sequence=residue_seq,
-        output_dir=tri_output_dir,
-        protein=protein,
-        attention_type="triangle_start",
-        residue_indices=[18, 39, 51, 79, 138, 159],
-        top_k=topk,
-        layer_idx=layer_idx
-    )
-
-    print()
+    _main()

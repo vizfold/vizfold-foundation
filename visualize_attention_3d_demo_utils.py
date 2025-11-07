@@ -1,4 +1,7 @@
+import argparse
 import csv
+from pathlib import Path
+
 import numpy as np
 from pymol import cmd
 from pymol.cgo import CYLINDER, SPHERE
@@ -337,41 +340,60 @@ def plot_pymol_attention_heads(
                                 figure_title=f"Triangle Start Attention Heads Layer {layer_idx} — Residue {res_idx}",
                                 output_file=subplot_path)
 
+def _parse_comma_separated_ints(raw):
+    if raw is None or raw.strip() == "":
+        return None
+    return [int(x.strip()) for x in raw.split(',') if x.strip()]
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description="Generate PyMOL renders for OpenFold attention heads.")
+    parser.add_argument("--pdb-file", type=Path, required=True, help="Path to relaxed PDB structure.")
+    parser.add_argument("--attention-dir", type=Path, required=True, help="Directory containing attention text dumps.")
+    parser.add_argument("--output-dir", type=Path, required=True, help="Directory for rendered PNG outputs.")
+    parser.add_argument("--protein", type=str, required=True, help="Protein identifier used in filenames.")
+    parser.add_argument("--attention-type", type=str, default="msa_row", choices=["msa_row", "triangle_start", "both"], help="Attention family to render.")
+    parser.add_argument("--layer-idx", type=int, default=47, help="Evoformer layer index to visualize.")
+    parser.add_argument("--top-k", type=int, default=50, help="Maximum number of edges per head.")
+    parser.add_argument("--residue-indices", type=str, default="", help="Comma separated residue indices for triangle attention.")
+    return parser.parse_args()
+
+
+def _main():
+    args = _parse_args()
+    residue_indices = _parse_comma_separated_ints(args.residue_indices)
+
+    output_dir = args.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.attention_type in ("msa_row", "both"):
+        print("Making visuals for MSA Row Attention...")
+        plot_pymol_attention_heads(
+            pdb_file=str(args.pdb_file),
+            attention_dir=str(args.attention_dir),
+            output_dir=str(output_dir / "msa_row"),
+            protein=args.protein,
+            attention_type="msa_row",
+            top_k=args.top_k,
+            layer_idx=args.layer_idx,
+        )
+
+    if args.attention_type in ("triangle_start", "both"):
+        if residue_indices is None:
+            raise ValueError("--residue-indices is required when rendering triangle_start attention")
+
+        print("Making visuals for Triangle Start Attention...")
+        plot_pymol_attention_heads(
+            pdb_file=str(args.pdb_file),
+            attention_dir=str(args.attention_dir),
+            output_dir=str(output_dir / "triangle_start"),
+            protein=args.protein,
+            attention_type="triangle_start",
+            residue_indices=residue_indices,
+            top_k=args.top_k,
+            layer_idx=args.layer_idx,
+        )
+
 
 if __name__ == "__main__":
-    # pdb_file = '/projects/bekh/thayes/output_dirs/my_outputs_align_6KWC_layer47_test/predictions/6KWC_1_model_1_ptm_relaxed.pdb'
-    pdb_file = '/projects/bekh/thayes/output_dirs/my_outputs_align_6KWC_demo_tri_18/predictions/6KWC_1_model_1_ptm_relaxed.pdb'
-    attention_dir = '/projects/bekh/thayes/demo_attn_saves/6KWC_demo'
-    output_msa = '/u/thayes/vizfold/demo_plots_msa_row'
-    output_tri = '/u/thayes/vizfold/demo_plots_tri_start'
-    residue_indices = [18, 39, 51, 79, 138, 159]
-    layer_idx = 47
-    topk = 50
-    protein = '6KWC'
-
-    # Run for MSA Row Attention
-    print('Making visuals for MSA Row Attention...')
-    plot_pymol_attention_heads(
-        pdb_file=pdb_file,
-        attention_dir=attention_dir,
-        output_dir=output_msa,
-        protein=protein,
-        attention_type="msa_row",
-        top_k=topk,
-        layer_idx=layer_idx
-    )
-
-    # Run for Triangle Start Attention
-    print('Making visuals for Triangle Start Attention...')
-    plot_pymol_attention_heads(
-        pdb_file=pdb_file,
-        attention_dir=attention_dir,
-        output_dir=output_tri,
-        protein=protein,
-        attention_type="triangle_start",
-        residue_indices=residue_indices,
-        top_k=topk,
-        layer_idx=layer_idx
-    )
-
-    print()
+    _main()

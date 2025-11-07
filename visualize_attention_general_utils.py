@@ -1,7 +1,11 @@
+import argparse
 import os
+from pathlib import Path
+
 from pymol import cmd
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+
 from visualize_attention_3d_demo_utils import extract_head_number
 
 
@@ -126,3 +130,43 @@ def generate_combined_attention_panels(
                         combine_3d_and_arc_images(struct_path, arc_path, out_path, fig_title=generate_title)
                     else:
                         print(f"[Skipped] Missing image for {prefix}")
+
+
+def _parse_comma_separated_ints(raw):
+    if raw is None or raw.strip() == "":
+        return None
+    return [int(x.strip()) for x in raw.split(',') if x.strip()]
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description="Combine 3D and arc attention visualizations into composite panels.")
+    parser.add_argument("--attention-type", type=str, required=True, choices=["msa_row", "triangle_start"], help="Attention family to combine.")
+    parser.add_argument("--protein", type=str, required=True, help="Protein identifier used in filenames.")
+    parser.add_argument("--layer-idx", type=int, required=True, help="Layer index to target.")
+    parser.add_argument("--output-dir-3d", type=Path, required=True, help="Directory containing PyMOL renders.")
+    parser.add_argument("--output-dir-arc", type=Path, required=True, help="Directory containing arc diagrams.")
+    parser.add_argument("--combined-output-dir", type=Path, required=True, help="Directory to write combined panels.")
+    parser.add_argument("--residue-indices", type=str, default="", help="Comma separated residues for triangle attention.")
+    return parser.parse_args()
+
+
+def _main():
+    args = _parse_args()
+    residue_indices = _parse_comma_separated_ints(args.residue_indices)
+
+    if args.attention_type == "triangle_start" and residue_indices is None:
+        raise ValueError("--residue-indices is required for triangle_start attention panels")
+
+    generate_combined_attention_panels(
+        attention_type=args.attention_type,
+        protein=args.protein,
+        layer_idx=args.layer_idx,
+        output_dir_3d=str(args.output_dir_3d),
+        output_dir_arc=str(args.output_dir_arc),
+        combined_output_dir=str(args.combined_output_dir),
+        residue_indices=residue_indices,
+    )
+
+
+if __name__ == "__main__":
+    _main()

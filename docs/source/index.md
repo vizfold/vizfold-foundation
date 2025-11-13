@@ -115,4 +115,5 @@ Aux_seq_files.md
 OpenFold_Parameters.md
 FAQ.md
 original_readme.md
+Heatmap_Visualization.md
 ```

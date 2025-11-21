@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -665,7 +666,8 @@ def visualize_layer_progression(layer_representations: Dict[int, torch.Tensor],
 
 
 def plot_pca_variance_explained(data: np.ndarray, max_components: int = 50,
-                                save_path: str = None, figsize: Tuple[int, int] = (12, 5)) -> None:
+                                save_path: str = None, figsize: Tuple[int, int] = (12, 5),
+                                interactive: bool = False) -> None:
     """
     Plot cumulative and individual explained variance for PCA.
     
@@ -674,6 +676,7 @@ def plot_pca_variance_explained(data: np.ndarray, max_components: int = 50,
         max_components: Maximum number of components to consider
         save_path: Path to save figure
         figsize: Figure size
+        interactive: Save Plotly HTML instead of matplotlib PNG when True
     """
     if not SKLEARN_AVAILABLE:
         raise ImportError("scikit-learn required for PCA")
@@ -686,34 +689,73 @@ def plot_pca_variance_explained(data: np.ndarray, max_components: int = 50,
     explained_var = pca.explained_variance_ratio_
     cumulative_var = np.cumsum(explained_var)
     
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
-    
-    # Individual variance
-    ax1.bar(range(1, len(explained_var) + 1), explained_var, alpha=0.7)
-    ax1.set_xlabel('Principal Component', fontsize=12)
-    ax1.set_ylabel('Explained Variance Ratio', fontsize=12)
-    ax1.set_title('Variance Explained by Each Component', fontsize=13, fontweight='bold')
-    ax1.grid(True, alpha=0.3)
-    
-    # Cumulative variance
-    ax2.plot(range(1, len(cumulative_var) + 1), cumulative_var, 
-            'o-', linewidth=2, markersize=6)
-    ax2.axhline(y=0.95, color='r', linestyle='--', label='95% variance')
-    ax2.axhline(y=0.99, color='g', linestyle='--', label='99% variance')
-    ax2.set_xlabel('Number of Components', fontsize=12)
-    ax2.set_ylabel('Cumulative Explained Variance', fontsize=12)
-    ax2.set_title('Cumulative Variance Explained', fontsize=13, fontweight='bold')
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    
-    if save_path:
-        os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"Saved variance plot to {save_path}")
-    
-    plt.show()
+    if interactive:
+        fig = make_subplots(rows=1, cols=2, subplot_titles=("Variance Explained by Each Component",
+                                                            "Cumulative Variance Explained"))
+        fig.add_trace(
+            go.Bar(
+                x=list(range(1, len(explained_var) + 1)),
+                y=explained_var,
+                marker=dict(color=explained_var, colorscale='Viridis'),
+                name="Individual Variance"
+            ),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=list(range(1, len(cumulative_var) + 1)),
+                y=cumulative_var,
+                mode='lines+markers',
+                line=dict(width=2),
+                marker=dict(size=6),
+                name="Cumulative Variance"
+            ),
+            row=1, col=2
+        )
+        fig.add_hline(y=0.95, line_dash="dash", line_color="red", row=1, col=2, annotation_text="95%")
+        fig.add_hline(y=0.99, line_dash="dash", line_color="green", row=1, col=2, annotation_text="99%")
+        fig.update_xaxes(title_text="Principal Component", row=1, col=1)
+        fig.update_yaxes(title_text="Explained Variance Ratio", row=1, col=1)
+        fig.update_xaxes(title_text="Number of Components", row=1, col=2)
+        fig.update_yaxes(title_text="Cumulative Explained Variance", row=1, col=2)
+        fig.update_layout(height=int(figsize[1] * 80), width=int(figsize[0] * 80),
+                          title_text="PCA Variance Explained")
+
+        if save_path:
+            save_path = save_path if save_path.endswith('.html') else f"{save_path}.html"
+            os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+            fig.write_html(save_path)
+            print(f"Saved variance plot to {save_path}")
+        fig.show()
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+        
+        # Individual variance
+        ax1.bar(range(1, len(explained_var) + 1), explained_var, alpha=0.7)
+        ax1.set_xlabel('Principal Component', fontsize=12)
+        ax1.set_ylabel('Explained Variance Ratio', fontsize=12)
+        ax1.set_title('Variance Explained by Each Component', fontsize=13, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        
+        # Cumulative variance
+        ax2.plot(range(1, len(cumulative_var) + 1), cumulative_var, 
+                'o-', linewidth=2, markersize=6)
+        ax2.axhline(y=0.95, color='r', linestyle='--', label='95% variance')
+        ax2.axhline(y=0.99, color='g', linestyle='--', label='99% variance')
+        ax2.set_xlabel('Number of Components', fontsize=12)
+        ax2.set_ylabel('Cumulative Explained Variance', fontsize=12)
+        ax2.set_title('Cumulative Variance Explained', fontsize=13, fontweight='bold')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save_path:
+            os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"Saved variance plot to {save_path}")
+        
+        plt.show()
     
     # Print some statistics
     for threshold in [0.9, 0.95, 0.99]:
@@ -724,7 +766,8 @@ def plot_pca_variance_explained(data: np.ndarray, max_components: int = 50,
 def plot_tsne_perplexity_comparison(data: np.ndarray, labels: Optional[np.ndarray] = None,
                                    perplexities: List[float] = [5, 30, 50, 100],
                                    save_path: str = None,
-                                   figsize: Tuple[int, int] = (16, 4)) -> None:
+                                   figsize: Tuple[int, int] = (16, 4),
+                                   interactive: bool = False) -> None:
     """
     Compare t-SNE results with different perplexity values.
     
@@ -734,49 +777,88 @@ def plot_tsne_perplexity_comparison(data: np.ndarray, labels: Optional[np.ndarra
         perplexities: List of perplexity values to try
         save_path: Path to save figure
         figsize: Figure size
+        interactive: Save Plotly HTML instead of matplotlib PNG when True
     """
     if not SKLEARN_AVAILABLE:
         raise ImportError("scikit-learn required for t-SNE")
     
-    n_perplexities = len(perplexities)
-    fig, axes = plt.subplots(1, n_perplexities, figsize=figsize)
-    
-    if n_perplexities == 1:
-        axes = [axes]
-    
-    for ax, perplexity in zip(axes, perplexities):
-        # Check if perplexity is valid
-        if data.shape[0] <= perplexity * 3:
-            ax.text(0.5, 0.5, f'Perplexity {perplexity}\ntoo large for\n{data.shape[0]} samples',
-                   ha='center', va='center', transform=ax.transAxes)
-            ax.axis('off')
-            continue
+    if interactive:
+        n_perplexities = len(perplexities)
+        fig = make_subplots(rows=1, cols=n_perplexities, subplot_titles=[f"Perplexity = {p}" for p in perplexities])
+        last_trace = None
+        for idx, perplexity in enumerate(perplexities, start=1):
+            if data.shape[0] <= perplexity * 3:
+                fig.add_annotation(text=f"Perplexity {perplexity} too large for {data.shape[0]} samples",
+                                   xref=f"x{idx}", yref=f"y{idx}",
+                                   x=0.5, y=0.5, showarrow=False)
+                continue
+            print(f"Computing t-SNE with perplexity={perplexity}...")
+            reduced = apply_tsne(data, n_components=2, perplexity=perplexity)
+            marker_kwargs = dict(size=6, opacity=0.8)
+            if labels is not None:
+                marker_kwargs.update(color=labels, colorscale='Viridis')
+            trace = go.Scatter(
+                x=reduced[:, 0],
+                y=reduced[:, 1],
+                mode='markers',
+                marker=marker_kwargs,
+                hovertext=[f"Idx {i} | x={x:.4f}, y={y:.4f}" for i, (x, y) in enumerate(reduced)],
+                name=f"Perplexity {perplexity}",
+                showlegend=False,
+            )
+            last_trace = trace
+            fig.add_trace(trace, row=1, col=idx)
+        fig.update_xaxes(title_text="t-SNE 1")
+        fig.update_yaxes(title_text="t-SNE 2")
+        fig.update_layout(height=int(figsize[1] * 80), width=int(figsize[0] * 80),
+                          title_text="t-SNE Perplexity Comparison")
+
+        if save_path:
+            save_path = save_path if save_path.endswith('.html') else f"{save_path}.html"
+            os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+            fig.write_html(save_path)
+            print(f"Saved perplexity comparison to {save_path}")
+        fig.show()
+    else:
+        n_perplexities = len(perplexities)
+        fig, axes = plt.subplots(1, n_perplexities, figsize=figsize)
         
-        print(f"Computing t-SNE with perplexity={perplexity}...")
-        reduced = apply_tsne(data, n_components=2, perplexity=perplexity)
+        if n_perplexities == 1:
+            axes = [axes]
+        
+        for ax, perplexity in zip(axes, perplexities):
+            # Check if perplexity is valid
+            if data.shape[0] <= perplexity * 3:
+                ax.text(0.5, 0.5, f'Perplexity {perplexity}\ntoo large for\n{data.shape[0]} samples',
+                       ha='center', va='center', transform=ax.transAxes)
+                ax.axis('off')
+                continue
+            
+            print(f"Computing t-SNE with perplexity={perplexity}...")
+            reduced = apply_tsne(data, n_components=2, perplexity=perplexity)
+            
+            if labels is not None:
+                scatter = ax.scatter(reduced[:, 0], reduced[:, 1], 
+                                   c=labels, cmap='viridis', alpha=0.7, s=30)
+            else:
+                ax.scatter(reduced[:, 0], reduced[:, 1], alpha=0.7, s=30)
+            
+            ax.set_title(f'Perplexity = {perplexity}', fontsize=12, fontweight='bold')
+            ax.set_xlabel('t-SNE 1')
+            ax.set_ylabel('t-SNE 2')
+            ax.grid(True, alpha=0.3)
         
         if labels is not None:
-            scatter = ax.scatter(reduced[:, 0], reduced[:, 1], 
-                               c=labels, cmap='viridis', alpha=0.7, s=30)
-        else:
-            ax.scatter(reduced[:, 0], reduced[:, 1], alpha=0.7, s=30)
+            plt.colorbar(scatter, ax=axes[-1], label='Layer/Label')
         
-        ax.set_title(f'Perplexity = {perplexity}', fontsize=12, fontweight='bold')
-        ax.set_xlabel('t-SNE 1')
-        ax.set_ylabel('t-SNE 2')
-        ax.grid(True, alpha=0.3)
-    
-    if labels is not None:
-        plt.colorbar(scatter, ax=axes[-1], label='Layer/Label')
-    
-    plt.tight_layout()
-    
-    if save_path:
-        os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"Saved perplexity comparison to {save_path}")
-    
-    plt.show()
+        plt.tight_layout()
+        
+        if save_path:
+            os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"Saved perplexity comparison to {save_path}")
+        
+        plt.show()
 
 
 # Convenience function to run complete analysis

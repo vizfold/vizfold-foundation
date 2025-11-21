@@ -35,6 +35,27 @@ from visualize_dimensionality_reduction import (
     plot_tsne_perplexity_comparison
 )
 
+# Normalize legacy representation keys to the expected schema
+def _normalize_rep_keys(reps: dict) -> dict:
+    if any(k in reps for k in ['msa', 'pair', 'single']):
+        return reps
+
+    normalized = {}
+    if 'msa_layers' in reps:
+        normalized['msa'] = reps.get('msa_layers', {})
+    if 'pair_layers' in reps:
+        normalized['pair'] = reps.get('pair_layers', {})
+    if 'single_layers' in reps:
+        normalized['single'] = reps.get('single_layers', {})
+
+    # Fallback to final tensors if layer dicts are missing/empty
+    if not normalized.get('msa') and 'final_msa' in reps:
+        normalized['msa'] = {0: reps['final_msa']}
+    if not normalized.get('pair') and 'final_pair' in reps:
+        normalized['pair'] = {0: reps['final_pair']}
+
+    return normalized
+
 
 def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47, interactive: bool = False):
     """
@@ -49,6 +70,14 @@ def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47, inte
     print(f" DEMO 1: Single Layer Analysis (Layer {layer_idx})")
     print(f"{'='*70}\n")
     
+    available_layers = sorted(intermediate_reps.get('msa', {}).keys())
+    if not available_layers:
+        raise ValueError("No MSA layers available in the provided representations.")
+    if layer_idx not in available_layers:
+        print(f"Layer {layer_idx} not found. Available layers: {available_layers}")
+        layer_idx = available_layers[-1]
+        print(f"Falling back to layer {layer_idx}")
+
     # Extract MSA representation for specified layer
     msa_rep = intermediate_reps['msa'][layer_idx]
     print(f"MSA representation shape: {msa_rep.shape}")
@@ -63,9 +92,14 @@ def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47, inte
     
     # 1. PCA Variance Analysis
     print("\n--- PCA Variance Analysis ---")
-    pca_variance_path = os.path.join(single_layer_dir, 'pca_variance.png')
-    plot_pca_variance_explained(msa_data, max_components=min(50, msa_data.shape[1]),
-                                save_path=pca_variance_path)
+    variance_ext = 'html' if interactive else 'png'
+    pca_variance_path = os.path.join(single_layer_dir, f'pca_variance.{variance_ext}')
+    plot_pca_variance_explained(
+        msa_data,
+        max_components=min(50, msa_data.shape[1]),
+        save_path=pca_variance_path,
+        interactive=interactive,
+    )
     
     # 2. Compare all methods
     print("\n--- Comparing Dimensionality Reduction Methods ---")
@@ -80,9 +114,10 @@ def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47, inte
     
     # 3. t-SNE Perplexity Comparison
     print("\n--- t-SNE Perplexity Analysis ---")
-    perplexity_path = os.path.join(single_layer_dir, 'tsne_perplexity.png')
+    perplexity_ext = 'html' if interactive else 'png'
+    perplexity_path = os.path.join(single_layer_dir, f'tsne_perplexity.{perplexity_ext}')
     plot_tsne_perplexity_comparison(msa_data, perplexities=[5, 20, 50],
-                                   save_path=perplexity_path)
+                                   save_path=perplexity_path, interactive=interactive)
     
     print(f"\n✓ Single layer analysis complete!")
     print(f"  Results saved to: {single_layer_dir}")
@@ -246,10 +281,17 @@ def main():
         return
     
     intermediate_reps = load_intermediate_reps_from_disk(args.input_reps)
+    intermediate_reps = _normalize_rep_keys(intermediate_reps)
     print(f"✓ Loaded representations from: {args.input_reps}")
-    print(f"  MSA layers: {sorted(intermediate_reps['msa'].keys())}")
+    print(f"  MSA layers: {sorted(intermediate_reps.get('msa', {}).keys())}")
     print(f"  Pair layers: {sorted(intermediate_reps.get('pair', {}).keys())}")
     print(f"  Single layers: {sorted(intermediate_reps.get('single', {}).keys())}")
+
+    # Clamp requested layer to available layers (for demo pickle with limited layers)
+    available_layers = sorted(intermediate_reps.get('msa', {}).keys())
+    if args.layer not in available_layers:
+        print(f"Requested layer {args.layer} not in available layers {available_layers}, defaulting to {available_layers[-1]}")
+        args.layer = available_layers[-1]
     
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)

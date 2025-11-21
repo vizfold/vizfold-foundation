@@ -3,6 +3,8 @@ from pymol import cmd
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from visualize_attention_3d_demo_utils import extract_head_number
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def make_fasta_file(FASTA_PATH, FASTA_DIR, FASTA_SEQUENCE):
@@ -126,3 +128,31 @@ def generate_combined_attention_panels(
                         combine_3d_and_arc_images(struct_path, arc_path, out_path, fig_title=generate_title)
                     else:
                         print(f"[Skipped] Missing image for {prefix}")
+
+def compute_contact_map(coords, threshold=8.0):
+    L = coords.shape[0]
+    dists = np.linalg.norm(coords[:, None, :] - coords[None, :, :], axis=-1)
+    return (dists < threshold).astype(float)
+
+def plot_contact_map_with_attention(contact_map, attn_edges, L, max_edges=500,ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+    ax.imshow(contact_map, cmap='Greys', interpolation='nearest', origin='upper')
+
+    attn_edges = sorted(attn_edges, key=lambda x: x[2], reverse=True)
+    attn_edges = attn_edges[:max_edges]
+
+    xs = [i for (i, j, w) in attn_edges]
+    ys = [j for (i, j, w) in attn_edges]
+    ws = [w for (_, _, w) in attn_edges]
+
+    ws = np.array(ws)
+    ws = (ws - ws.min()) / (ws.max() - ws.min() + 1e-6)
+
+    ax.scatter(xs, ys, c='red', s=10, alpha=ws, edgecolors='none')
+
+    ax.set_title("Contact Map with Attention Overlay")
+    ax.set_xlabel("Residue j")
+    ax.set_ylabel("Residue i")
+    return ax

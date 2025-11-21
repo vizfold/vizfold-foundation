@@ -1,0 +1,322 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Minimalist Design System - Black & White, Inter Font */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Simple black and white palette */
+  --color-bg: #ffffff;
+  --color-fg: #000000;
+  --color-border: #e0e0e0;
+  --color-hover: #f5f5f5;
+  --color-text-primary: #000000;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 400;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+
+  /* Rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Reset default styles */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+p {
+  margin: 0;
+}
+
+/* Component Layer */
+@layer components {
+  /* Buttons - minimal style */
+  .btn-primary {
+    @apply px-4 py-2 bg-black text-white border border-black;
+    @apply hover:bg-white hover:text-black;
+    @apply transition-colors duration-150;
+    @apply disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black disabled:hover:text-white;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white text-black border border-black;
+    @apply hover:bg-black hover:text-white;
+    @apply transition-colors duration-150;
+    @apply disabled:opacity-30 disabled:cursor-not-allowed;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 bg-transparent text-black border border-transparent;
+    @apply hover:bg-gray-100;
+    @apply transition-colors duration-150;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  /* Input fields - clean, bordered */
+  .input-field {
+    @apply w-full px-3 py-2 bg-white text-black border border-gray-300;
+    @apply focus:outline-none focus:border-black;
+    @apply transition-colors duration-150;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .input-field:focus {
+    box-shadow: none;
+  }
+
+  /* Select dropdowns */
+  select.input-field {
+    @apply appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  /* Card - simple white box with border */
+  .card {
+    @apply bg-white border border-gray-300 p-6;
+  }
+
+  .card-header {
+    @apply border-b border-gray-300 pb-4 mb-4;
+  }
+
+  /* Typography classes */
+  .text-heading-1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .text-heading-2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .text-heading-3 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .text-body {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--color-text-primary);
+  }
+
+  .text-small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+
+  .text-tiny {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-tertiary);
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  /* Links */
+  a {
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition: opacity 150ms;
+  }
+
+  a:hover {
+    opacity: 0.6;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px;
+    border-bottom: 2px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 14px;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover {
+    background-color: var(--color-hover);
+  }
+
+  /* Dividers */
+  .divider {
+    height: 1px;
+    background-color: var(--color-border);
+    border: none;
+    margin: 24px 0;
+  }
+
+  /* Status indicators */
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .status-dot-pending {
+    background-color: #999;
+  }
+
+  .status-dot-running {
+    background-color: #000;
+  }
+
+  .status-dot-completed {
+    background-color: #000;
+  }
+
+  .status-dot-failed {
+    background-color: #666;
+    border: 1px solid #000;
+  }
+
+  /* Loading spinner - minimal */
+  .spinner {
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-fg);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Code/monospace */
+  code, pre {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 13px;
+  }
+
+  code {
+    background-color: #f5f5f5;
+    padding: 2px 6px;
+    border: 1px solid var(--color-border);
+  }
+
+  pre {
+    background-color: #f5f5f5;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    overflow-x: auto;
+  }
+
+  /* Focus states - simple black outline */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
+}
+
+/* Utility layer additions */
+@layer utilities {
+  /* Spacing system */
+  .space-y-section {
+    @apply space-y-12;
+  }
+
+  .space-y-block {
+    @apply space-y-6;
+  }
+
+  /* Container */
+  .container-narrow {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .container-wide {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  /* Remove all animations if user prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

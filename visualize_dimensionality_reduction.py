@@ -7,11 +7,13 @@ reduction techniques including t-SNE, PCA, UMAP, and autoencoder-based methods.
 Designed to work with the intermediate representations extracted by 
 visualize_intermediate_reps_utils.py (implemented by Jayanth).
 
-Author: Shreyas
+Author: Shreyas, Boyang
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -355,6 +357,87 @@ def plot_2d_embedding(embedding: np.ndarray, labels: Optional[np.ndarray] = None
     plt.show()
 
 
+def plot_2d_embedding_interactive(embedding: np.ndarray, labels: Optional[np.ndarray] = None,
+                                 title: str = "2D Embedding", save_path: str = None,
+                                 cmap: str = 'Viridis', figsize: Tuple[int, int] = (10, 8),
+                                 alpha: float = 0.7, s: int = 8) -> None:
+    """
+    Interactive 2D embedding plot using Plotly.
+    
+    Args:
+        embedding: 2D embedding (n_samples, 2)
+        labels: Optional labels for coloring points
+        title: Plot title
+        save_path: Path to save interactive figure (HTML)
+        cmap: Colormap for scatter plot (Plotly scale name)
+        figsize: Figure size in inches (converted to pixels internally)
+        alpha: Point transparency
+        s: Point size
+    """
+    width = int(figsize[0] * 80)
+    height = int(figsize[1] * 80)
+    residue_indices = np.arange(embedding.shape[0])
+    
+    if labels is not None:
+        hover_text = [
+            f"Residue {idx} | Label: {lbl} | x: {x:.4f}, y: {y:.4f}"
+            for idx, (lbl, (x, y)) in enumerate(zip(labels, embedding))
+        ]
+        hover_data = {
+            "residue_index": residue_indices,
+            "label": labels,
+            "x": np.round(embedding[:, 0], 4),
+            "y": np.round(embedding[:, 1], 4),
+        }
+        fig = px.scatter(
+            x=embedding[:, 0],
+            y=embedding[:, 1],
+            color=labels,
+            color_continuous_scale=cmap if np.issubdtype(np.array(labels).dtype, np.number) else None,
+            hover_data=hover_data,
+            title=title,
+            hover_name=hover_text,
+        )
+        fig.update_traces(marker=dict(size=s, opacity=alpha))
+        fig.update_layout(
+            xaxis_title="Component 1",
+            yaxis_title="Component 2",
+            width=width,
+            height=height,
+            legend_title="Label",
+        )
+    else:
+        tooltip_text = [
+            f"Residue {idx} | x: {x:.4f}, y: {y:.4f}"
+            for idx, (x, y) in enumerate(embedding)
+        ]
+        fig = go.Figure(
+            data=go.Scatter(
+                x=embedding[:, 0],
+                y=embedding[:, 1],
+                mode='markers',
+                text=tooltip_text,
+                marker=dict(size=s, opacity=alpha, color='steelblue'),
+                hovertemplate="%{text}<extra></extra>",
+            )
+        )
+        fig.update_layout(
+            title=title,
+            xaxis_title="Component 1",
+            yaxis_title="Component 2",
+            width=width,
+            height=height,
+        )
+    
+    if save_path:
+        save_path = save_path if save_path.endswith('.html') else f"{save_path}.html"
+        os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+        fig.write_html(save_path)
+        print(f"Saved interactive 2D embedding to {save_path}")
+    
+    fig.show()
+
+
 def plot_3d_embedding(embedding: np.ndarray, labels: Optional[np.ndarray] = None,
                      title: str = "3D Embedding", save_path: str = None,
                      cmap: str = 'viridis', figsize: Tuple[int, int] = (12, 9),
@@ -403,7 +486,8 @@ def plot_3d_embedding(embedding: np.ndarray, labels: Optional[np.ndarray] = None
 def compare_reduction_methods(data: np.ndarray, labels: Optional[np.ndarray] = None,
                               methods: List[str] = ['pca', 'tsne', 'umap'],
                               n_components: int = 2, save_dir: str = None,
-                              figsize: Tuple[int, int] = (18, 6)) -> Dict[str, np.ndarray]:
+                              figsize: Tuple[int, int] = (18, 6),
+                              interactive: bool = False) -> Dict[str, np.ndarray]:
     """
     Compare multiple dimensionality reduction methods side by side.
     
@@ -414,6 +498,7 @@ def compare_reduction_methods(data: np.ndarray, labels: Optional[np.ndarray] = N
         n_components: Target dimensionality (2 or 3)
         save_dir: Directory to save individual and combined plots
         figsize: Figure size for combined plot
+        interactive: Whether to use Plotly for 2D visualizations
     
     Returns:
         Dictionary mapping method name to reduced representation
@@ -441,46 +526,60 @@ def compare_reduction_methods(data: np.ndarray, labels: Optional[np.ndarray] = N
     
     # Create comparison plot for 2D
     if n_components == 2 and results:
-        n_methods = len(results)
-        fig, axes = plt.subplots(1, n_methods, figsize=figsize)
-        
-        if n_methods == 1:
-            axes = [axes]
-        
-        for ax, (method, reduced) in zip(axes, results.items()):
-            if labels is not None:
-                scatter = ax.scatter(reduced[:, 0], reduced[:, 1], 
-                                   c=labels, cmap='viridis', alpha=0.7, s=30)
-            else:
-                ax.scatter(reduced[:, 0], reduced[:, 1], alpha=0.7, s=30)
+        if interactive:
+            if save_dir:
+                os.makedirs(save_dir, exist_ok=True)
+            for method, reduced in results.items():
+                save_path = os.path.join(save_dir, f'{method}_embedding.html') if save_dir else None
+                plot_2d_embedding_interactive(
+                    reduced,
+                    labels,
+                    title=f'{method.upper()} Embedding',
+                    save_path=save_path,
+                    cmap='Viridis',
+                )
+        else:
+            n_methods = len(results)
+            fig, axes = plt.subplots(1, n_methods, figsize=figsize)
             
-            ax.set_title(f'{method.upper()}', fontsize=12, fontweight='bold')
-            ax.set_xlabel('Component 1')
-            ax.set_ylabel('Component 2')
-            ax.grid(True, alpha=0.3)
-        
-        if labels is not None:
-            # Add colorbar to the last subplot
-            plt.colorbar(scatter, ax=axes[-1], label='Layer/Label')
-        
-        plt.tight_layout()
-        
-        if save_dir:
-            os.makedirs(save_dir, exist_ok=True)
-            comparison_path = os.path.join(save_dir, 'method_comparison.png')
-            plt.savefig(comparison_path, dpi=300, bbox_inches='tight')
-            print(f"Saved comparison plot to {comparison_path}")
-        
-        plt.show()
+            if n_methods == 1:
+                axes = [axes]
+            
+            for ax, (method, reduced) in zip(axes, results.items()):
+                if labels is not None:
+                    scatter = ax.scatter(reduced[:, 0], reduced[:, 1], 
+                                       c=labels, cmap='viridis', alpha=0.7, s=30)
+                else:
+                    ax.scatter(reduced[:, 0], reduced[:, 1], alpha=0.7, s=30)
+                
+                ax.set_title(f'{method.upper()}', fontsize=12, fontweight='bold')
+                ax.set_xlabel('Component 1')
+                ax.set_ylabel('Component 2')
+                ax.grid(True, alpha=0.3)
+            
+            if labels is not None:
+                # Add colorbar to the last subplot
+                plt.colorbar(scatter, ax=axes[-1], label='Layer/Label')
+            
+            plt.tight_layout()
+            
+            if save_dir:
+                os.makedirs(save_dir, exist_ok=True)
+                comparison_path = os.path.join(save_dir, 'method_comparison.png')
+                plt.savefig(comparison_path, dpi=300, bbox_inches='tight')
+                print(f"Saved comparison plot to {comparison_path}")
+            
+            plt.show()
     
-    # Save individual plots if save_dir provided
+    # Save individual plots if save_dir provided for 3D or non-interactive paths
     if save_dir:
         for method, reduced in results.items():
-            individual_path = os.path.join(save_dir, f'{method}_embedding.png')
-            if n_components == 2:
+            if n_components == 2 and not interactive:
+                individual_path = os.path.join(save_dir, f'{method}_embedding.png')
                 plot_2d_embedding(reduced, labels, title=f'{method.upper()} Embedding',
                                 save_path=individual_path)
             elif n_components == 3:
+                individual_path = os.path.join(save_dir, f'{method}_embedding.png')
                 plot_3d_embedding(reduced, labels, title=f'{method.upper()} Embedding',
                                 save_path=individual_path)
     
@@ -490,7 +589,8 @@ def compare_reduction_methods(data: np.ndarray, labels: Optional[np.ndarray] = N
 def visualize_layer_progression(layer_representations: Dict[int, torch.Tensor],
                                 method: str = 'tsne', n_components: int = 2,
                                 save_dir: str = None, rep_type: str = 'msa',
-                                flatten_mode: str = 'residue') -> Dict[int, np.ndarray]:
+                                flatten_mode: str = 'residue',
+                                interactive: bool = False) -> Dict[int, np.ndarray]:
     """
     Visualize how representations evolve across layers using dimensionality reduction.
     
@@ -501,6 +601,7 @@ def visualize_layer_progression(layer_representations: Dict[int, torch.Tensor],
         save_dir: Directory to save plots
         rep_type: Type of representation ('msa', 'pair', 'single')
         flatten_mode: How to flatten the data
+        interactive: Whether to use Plotly for 2D visualizations
     
     Returns:
         Dictionary mapping layer index to reduced representation
@@ -541,7 +642,14 @@ def visualize_layer_progression(layer_representations: Dict[int, torch.Tensor],
     save_path = os.path.join(save_dir, f'{rep_type}_evolution_{method}.png') if save_dir else None
     
     if n_components == 2:
-        plot_2d_embedding(reduced, labels, title=title, save_path=save_path)
+        if interactive:
+            html_save_path = None
+            if save_path:
+                base, _ = os.path.splitext(save_path)
+                html_save_path = f"{base}.html"
+            plot_2d_embedding_interactive(reduced, labels, title=title, save_path=html_save_path)
+        else:
+            plot_2d_embedding(reduced, labels, title=title, save_path=save_path)
     elif n_components == 3:
         plot_3d_embedding(reduced, labels, title=title, save_path=save_path)
     
@@ -678,7 +786,8 @@ def run_complete_dimensionality_reduction_analysis(
     rep_type: str = 'msa',
     methods: List[str] = ['pca', 'tsne', 'umap'],
     flatten_mode: str = 'residue',
-    layer_subset: Optional[List[int]] = None
+    layer_subset: Optional[List[int]] = None,
+    interactive: bool = False,
 ) -> Dict[str, Dict[int, np.ndarray]]:
     """
     Run complete dimensionality reduction analysis on intermediate representations.
@@ -692,6 +801,7 @@ def run_complete_dimensionality_reduction_analysis(
         methods: List of reduction methods to apply
         flatten_mode: How to flatten the data
         layer_subset: Optional subset of layers to analyze
+        interactive: Use Plotly for 2D plots and save HTML when True
     
     Returns:
         Nested dictionary: method -> layer_idx -> reduced_representation
@@ -734,7 +844,8 @@ def run_complete_dimensionality_reduction_analysis(
             n_components=2,
             save_dir=method_dir,
             rep_type=rep_type,
-            flatten_mode=flatten_mode
+            flatten_mode=flatten_mode,
+            interactive=interactive,
         )
         all_results[method] = results
     
@@ -746,7 +857,7 @@ def run_complete_dimensionality_reduction_analysis(
     
     comparison_dir = os.path.join(output_dir, 'method_comparison')
     compare_reduction_methods(final_data, methods=methods, n_components=2, 
-                              save_dir=comparison_dir)
+                              save_dir=comparison_dir, interactive=interactive)
     
     # Save results
     results_file = os.path.join(output_dir, f'{rep_type}_reduction_results.npz')

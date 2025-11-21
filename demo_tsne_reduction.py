@@ -4,8 +4,14 @@ Demonstration script for t-SNE and dimensionality reduction analysis of OpenFold
 This script shows how to use the dimensionality reduction utilities to analyze
 intermediate representations extracted from OpenFold's 48-layer network.
 
-Author: Shreyas
+Author: Shreyas, Boyang
 Building on: Jayanth's intermediate representation extraction utilities
+
+Usage:
+    python demo_tsne_reduction.py [--input_reps PATH] [--output_dir DIR] [--demo DEMO_TYPE] [--layer LAYER] [--layers LAYERS] [--interactive] [--output_dir DIR]
+
+Example:
+    python demo_tsne_reduction.py --input_reps demo_outputs/demo_protein_intermediate_reps.pt --demo single --layer 47 --interactive --output_dir outputs/tsne_demo_interactive
 """
 
 import os
@@ -30,7 +36,7 @@ from visualize_dimensionality_reduction import (
 )
 
 
-def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47):
+def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47, interactive: bool = False):
     """
     Demonstrate dimensionality reduction on a single layer.
     
@@ -68,7 +74,8 @@ def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47):
         msa_data,
         methods=['pca', 'tsne', 'umap'],
         n_components=2,
-        save_dir=comparison_dir
+        save_dir=comparison_dir,
+        interactive=interactive,
     )
     
     # 3. t-SNE Perplexity Comparison
@@ -81,7 +88,7 @@ def demo_single_layer_analysis(intermediate_reps, output_dir, layer_idx=47):
     print(f"  Results saved to: {single_layer_dir}")
 
 
-def demo_layer_progression(intermediate_reps, output_dir, layer_subset=None):
+def demo_layer_progression(intermediate_reps, output_dir, layer_subset=None, interactive: bool = False):
     """
     Demonstrate layer progression visualization.
     
@@ -123,14 +130,15 @@ def demo_layer_progression(intermediate_reps, output_dir, layer_subset=None):
             n_components=2,
             save_dir=method_dir,
             rep_type='msa',
-            flatten_mode='residue'
+            flatten_mode='residue',
+            interactive=interactive,
         )
     
     print(f"\n✓ Layer progression analysis complete!")
     print(f"  Results saved to: {progression_dir}")
 
 
-def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None):
+def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None, interactive: bool = False):
     """
     Run comprehensive analysis using the all-in-one function.
     
@@ -160,7 +168,8 @@ def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None
         rep_type='msa',
         methods=['pca', 'tsne', 'umap'],
         flatten_mode='residue',
-        layer_subset=layer_subset
+        layer_subset=layer_subset,
+        interactive=interactive,
     )
     
     # Pair Analysis (if available)
@@ -173,7 +182,8 @@ def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None
             rep_type='pair',
             methods=['pca', 'umap'],  # Skip t-SNE for pair (can be slow)
             flatten_mode='pairwise',
-            layer_subset=[layer_subset[0], layer_subset[-1]]  # Just first and last
+            layer_subset=[layer_subset[0], layer_subset[-1]],  # Just first and last
+            interactive=interactive,
         )
     
     print(f"\n✓ Comprehensive analysis complete!")
@@ -216,6 +226,11 @@ def main():
         default=None,
         help='Layer indices for progression/comprehensive demos'
     )
+    parser.add_argument(
+        '--interactive',
+        action='store_true',
+        help='Use Plotly and save interactive HTML visualizations for 2D embeddings'
+    )
     
     args = parser.parse_args()
     
@@ -242,13 +257,13 @@ def main():
     
     # Run requested demo(s)
     if args.demo in ['single', 'all']:
-        demo_single_layer_analysis(intermediate_reps, args.output_dir, args.layer)
+        demo_single_layer_analysis(intermediate_reps, args.output_dir, args.layer, interactive=args.interactive)
     
     if args.demo in ['progression', 'all']:
-        demo_layer_progression(intermediate_reps, args.output_dir, args.layers)
+        demo_layer_progression(intermediate_reps, args.output_dir, args.layers, interactive=args.interactive)
     
     if args.demo in ['comprehensive', 'all']:
-        demo_comprehensive_analysis(intermediate_reps, args.output_dir, args.layers)
+        demo_comprehensive_analysis(intermediate_reps, args.output_dir, args.layers, interactive=args.interactive)
     
     # Final summary
     print(f"\n{'='*70}")

@@ -371,6 +371,63 @@ def list_viz():
         }
     }
     return jsonify(result)
+# new change: helper to compute intermediate-structure directory
+def get_intermediate_struct_dir(protein_id, residue_idx):
+    """
+    Directory where per-layer structure PDBs are stored.
+    Expected layout (relative to UPLOAD_FOLDER):
+        outputs/intermediate_structures_{protein_id}_demo_tri_{residue_idx}/layer_{L}.pdb
+    """
+    base = os.path.abspath(app.config['UPLOAD_FOLDER'])
+    return os.path.join(
+        base,
+        f'outputs/intermediate_structures_{protein_id}_demo_tri_{residue_idx}'
+    )
+
+
+@app.route('/structures/list')
+def list_structures():
+    """
+    List per-layer structure PDBs that were pre-generated on the HPC.
+    This does NOT run any heavy computation, it only scans the output directory.
+    """
+    protein_id = request.args.get('protein_id')
+    residue_idx = request.args.get('residue_idx', type=int)
+
+    if not protein_id or residue_idx is None:
+        return jsonify({'error': 'protein_id and residue_idx required'}), 400
+
+    struct_dir = get_intermediate_struct_dir(protein_id, residue_idx)
+
+    layers = []
+    pdb_paths = {}
+
+    if os.path.isdir(struct_dir):
+        for fname in os.listdir(struct_dir):
+            # Expect filenames like: layer_12.pdb
+            if fname.startswith('layer_') and fname.endswith('.pdb'):
+                try:
+                    L = int(fname[len('layer_'):-4])
+                except ValueError:
+                    continue
+                layers.append(L)
+                # Path is relative to UPLOAD_FOLDER, for the existing /pdb route
+                rel_path = os.path.join(
+                    'outputs',
+                    f'intermediate_structures_{protein_id}_demo_tri_{residue_idx}',
+                    fname,
+                )
+                pdb_paths[str(L)] = rel_path
+
+    layers = sorted(set(layers))
+
+    return jsonify({
+        'protein_id': protein_id,
+        'residue_idx': residue_idx,
+        'layers': layers,
+        'pdb_paths': pdb_paths,
+    })
+
 
 @app.route('/viz/generate', methods=['POST'])
 def viz_generate():

@@ -175,6 +175,52 @@
             </div>
         </div>
     </div>
+    <!-- new change: Intermediate Structures Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse"
+             href="#intermediateCollapse"
+             role="button"
+             aria-expanded="false"
+             aria-controls="intermediateCollapse"
+             style="cursor: pointer;">
+            <h5 class="mb-0">Intermediate Structures (per layer)</h5>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="collapse" id="intermediateCollapse">
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    new change: If your HPC job generated per-layer structures, you can browse them here.
+                    The web app only reads precomputed <code>.pdb</code> files; it does not run OpenFold itself.
+                </p>
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            id="load-structures-btn">
+                        Load available layers
+                    </button>
+                    <div class="flex-grow-1 d-flex align-items-center">
+                        <label for="structureLayerRange" class="form-label mb-0 me-2">
+                            Layer:
+                            <span id="structureLayerValue">-</span>
+                        </label>
+                        <input type="range"
+                               class="form-range"
+                               id="structureLayerRange"
+                               min="0"
+                               max="0"
+                               value="0"
+                               disabled>
+                    </div>
+                </div>
+
+                <div id="structures-status" class="small text-muted">
+                    new change: No intermediate structures loaded yet.
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Attention Visualizations Section -->
     <div class="card mb-4">
@@ -576,6 +622,9 @@
     document.addEventListener('DOMContentLoaded', function () {
         window.viewer = initViewer();
 
+        // new change: wire up intermediate-structure controls
+        initIntermediateStructuresUI();
+
         // Load proteins into dropdown
         loadProteins();
 
@@ -652,6 +701,9 @@
     let attnData = null; // cached list from /viz/list
     let attnType = 'msa_row';
     let attnPollTimer = null;
+    // new change: cache per-layer intermediate structures
+    // Shape: { layers: [int], pdb_paths: {layerString: relPdbPath}, protein_id, residue_idx }
+    let intermediateStructures = null;
 
     // Function to load proteins from /proteins endpoint
     async function loadProteins() {
@@ -1435,6 +1487,110 @@
         };
         await attempt();
         attnPollTimer = setInterval(attempt, 4000);
+    }
+        // new change: Intermediate structures logic
+    function initIntermediateStructuresUI() {
+        const loadBtn = document.getElementById('load-structures-btn');
+        const range = document.getElementById('structureLayerRange');
+
+        if (!loadBtn || !range) return;
+
+        loadBtn.addEventListener('click', async () => {
+            const status = document.getElementById('structures-status');
+            if (!currentProteinMeta) {
+                status.textContent = 'Please run a prediction or select a protein first.';
+                return;
+            }
+
+            status.textContent = 'Loading available layers from server...';
+
+            try {
+                const params = new URLSearchParams({
+                    protein_id: currentProteinMeta.protein_id,
+                    residue_idx: currentProteinMeta.residue_idx
+                });
+                const res = await fetch(`/structures/list?${params.toString()}`);
+                if (!res.ok) {
+                    status.textContent = 'Server error while listing structures.';
+                    return;
+                }
+                const data = await res.json();
+
+                if (!data.layers || data.layers.length === 0) {
+                    intermediateStructures = null;
+                    range.disabled = true;
+                    range.value = 0;
+                    document.getElementById('structureLayerValue').textContent = '-';
+                    status.textContent = 'No intermediate structure PDBs were found for this protein.';
+                    return;
+                }
+
+                intermediateStructures = data;
+
+                // Configure slider
+                const layers = data.layers.slice().sort((a, b) => a - b);
+                range.min = layers[0];
+                range.max = layers[layers.length - 1];
+                range.value = layers[0];
+                range.disabled = false;
+                document.getElementById('structureLayerValue').textContent = range.value;
+
+                status.textContent = `Loaded ${layers.length} layer(s). Use the slider to switch layers.`;
+
+                // Immediately show the first layer
+                showStructureForLayer(parseInt(range.value, 10));
+            } catch (err) {
+                console.error('Error loading intermediate structures:', err);
+                status.textContent = 'Failed to load intermediate structures.';
+            }
+        });
+
+        range.addEventListener('input', () => {
+            document.getElementById('structureLayerValue').textContent = range.value;
+            const L = parseInt(range.value, 10);
+            showStructureForLayer(L);
+        });
+    }
+
+    async function showStructureForLayer(layerIdx) {
+        if (!intermediateStructures) return;
+        const paths = intermediateStructures.pdb_paths || {};
+        const key = String(layerIdx);
+        const relPath = paths[key];
+        const status = document.getElementById('structures-status');
+
+        if (!relPath) {
+            if (status) {
+                status.textContent = `No PDB found for layer ${layerIdx}.`;
+            }
+            return;
+        }
+
+        try {
+            // Reuse existing PDB loader (expects path relative to /pdb)
+            await loadPDB(relPath);
+            if (status) {
+                status.textContent = `Showing structure for layer ${layerIdx}.`;
+            }
+
+            // Expand 3D viewer and intermediate card if collapsed
+            const threeDCollapse = new bootstrap.Collapse(
+                document.getElementById('threeDCollapse'),
+                { toggle: false }
+            );
+            threeDCollapse.show();
+
+            const interCollapse = new bootstrap.Collapse(
+                document.getElementById('intermediateCollapse'),
+                { toggle: false }
+            );
+            interCollapse.show();
+        } catch (err) {
+            console.error('Error loading per-layer PDB:', err);
+            if (status) {
+                status.textContent = `Error displaying structure for layer ${layerIdx}.`;
+            }
+        }
     }
 
 </script>

@@ -681,9 +681,7 @@ def run_complete_dimensionality_reduction_analysis(
     layer_subset: Optional[List[int]] = None
 ) -> Dict[str, Dict[int, np.ndarray]]:
     """
-    Run complete dimensionality reduction analysis on intermediate representations.
-    
-    This is the main entry point for running comprehensive analysis with multiple methods.
+    Run dimensionality reduction analysis on intermediate representations.
     
     Args:
         representations: Dictionary mapping layer indices to representation tensors

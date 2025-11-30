@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-COMPREHENSIVE MAXED-OUT 48-LAYER ANALYSIS DEMO
-===============================================
-This demo showcases ALL advanced visualization and analysis features:
+48-LAYER ANALYSIS DEMO
+======================
+This demo demonstrates advanced visualization and analysis features:
 - 48-layer stratified analysis
 - Structure module evolution
 - Layer importance ranking
@@ -19,9 +19,9 @@ import os
 from visualize_intermediate_reps_utils import *
 
 print("="*80)
-print("  COMPREHENSIVE MAXED-OUT OPENFOLD 48-LAYER ANALYSIS")
+print("  OPENFOLD 48-LAYER ANALYSIS")
 print("="*80)
-print("\nGenerating the most comprehensive protein structure analysis possible!")
+print("\nGenerating full 48-layer protein structure analysis.")
 print("This demo includes ALL advanced features and visualizations.\n")
 
 # Create mock protein data
@@ -253,17 +253,17 @@ for layer_idx in key_layers:
 print(f"  ✓ Saved {len(key_layers)} layer-specific MSA heatmaps")
 
 # ========================================================================
-# COMPREHENSIVE SUMMARY
+# SUMMARY
 # ========================================================================
 print("\n" + "="*80)
 print("ANALYSIS COMPLETE!")
 print("="*80)
 
 files = [f for f in os.listdir(output_dir) if f.endswith('.png')]
-print(f"\n📊 Total visualizations generated: {len(files)}")
-print(f"📁 Output directory: {output_dir}/")
+print(f"\nTotal visualizations generated: {len(files)}")
+print(f"Output directory: {output_dir}/")
 
-print("\n✅ COMPREHENSIVE ANALYSIS BREAKDOWN:")
+print("\nAnalysis includes:")
 print("   [1] Multi-layer evolution (48 layers, 5 residues)")
 print("   [2] Stratified MSA comparison (13 layers)")
 print("   [3] Stratified Pair comparison (13 layers)")
@@ -276,7 +276,7 @@ print("   [9] Hierarchical layer clustering")
 print("   [10] Enhanced pair heatmap with contacts")
 print("   [11] Layer-specific heatmaps (5 layers)")
 
-print("\n📈 ANALYSIS CAPABILITIES:")
+print("\nAnalysis capabilities:")
 print("   ✓ 48-layer deep network analysis")
 print("   ✓ Stratified sampling strategies")
 print("   ✓ Multi-metric layer importance")
@@ -288,7 +288,7 @@ print("   ✓ Contact map correlation")
 print("   ✓ Statistical analysis")
 print("   ✓ Publication-ready outputs")
 
-print("\n🎯 READY FOR:")
+print("\nOutputs include:")
 print("   • Real OpenFold inference")
 print("   • Multi-protein comparison")
 print("   • Research publication")
@@ -296,6 +296,6 @@ print("   • Interactive web interface")
 print("   • Large-scale analysis")
 
 print("\n" + "="*80)
-print("  MAXED OUT! All features showcased successfully! 🚀")
+print("  All features demonstrated successfully.")
 print("="*80)
 

@@ -113,7 +113,7 @@ See the [LICENSE](./LICENSE) file for details.
 
 ## ✨ NEW: Intermediate Representation Visualization & Dimensionality Reduction
 
-This fork extends OpenFold visualization with comprehensive tools for analyzing intermediate representations from OpenFold's 48-layer network.
+This fork extends OpenFold visualization with tools for analyzing intermediate representations from OpenFold's 48-layer network.
 
 ### Features:
 
@@ -145,8 +145,6 @@ python demo_tsne_reduction.py \
 ### Documentation:
 
 - **Intermediate Representations**: See `INTERMEDIATE_REPS_README.md` (Jayanth's work)
-- **Dimensionality Reduction**: See `TSNE_DIMENSIONALITY_REDUCTION_GUIDE.md` (Shreyas's extension)
-- **Comprehensive Guide**: See `COMPREHENSIVE_ANALYSIS_GUIDE.md`
 
 ### Additional Dependencies:
 

@@ -132,7 +132,7 @@ def demo_layer_progression(intermediate_reps, output_dir, layer_subset=None):
 
 def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None):
     """
-    Run comprehensive analysis using the all-in-one function.
+    Run full analysis pipeline using the all-in-one function.
     
     Args:
         intermediate_reps: Dictionary of intermediate representations
@@ -140,7 +140,7 @@ def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None
         layer_subset: List of layers to analyze
     """
     print(f"\n{'='*70}")
-    print(" DEMO 3: Comprehensive Analysis (All-in-One)")
+    print(" DEMO 3: Full Analysis Pipeline")
     print(f"{'='*70}\n")
     
     if layer_subset is None:
@@ -149,7 +149,7 @@ def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None
         layer_subset = [all_layers[0], all_layers[n_layers//3], 
                        all_layers[2*n_layers//3], all_layers[-1]]
     
-    print(f"Running comprehensive analysis on {len(layer_subset)} layers: {layer_subset}")
+    print(f"Running full analysis on {len(layer_subset)} layers: {layer_subset}")
     
     # MSA Analysis
     print("\n>>> MSA Representation Analysis")
@@ -176,7 +176,7 @@ def demo_comprehensive_analysis(intermediate_reps, output_dir, layer_subset=None
             layer_subset=[layer_subset[0], layer_subset[-1]]  # Just first and last
         )
     
-    print(f"\n✓ Comprehensive analysis complete!")
+    print(f"\n✓ Full analysis complete!")
     print(f"  Results saved to: {output_dir}")
 
 

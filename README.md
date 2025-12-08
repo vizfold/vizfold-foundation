@@ -16,6 +16,22 @@ This is a lightweight extension of [OpenFold](https://github.com/aqlaboratory/op
 
 ---
 
+## Architecture Overview
+
+AttentionViz layers three lightweight components on top of upstream OpenFold:
+- **Workflow assets** (docs, scripts, notebooks) provide reproducible configs and runnable examples.
+- **Instrumented CLIs** wrap OpenFold inference/training so attention tensors are siphoned off without modifying the scientific core.
+- **Visualization helpers** read the exported metadata and generate PyMOL overlays plus sequence-space plots for exploratory analysis.
+
+The diagram captures how these pieces interact and what artifacts move between them.
+
+![AttentionViz architecture](./docs/imgs/AttentionViz_Architecture.png)
+
+- [High-res PDF](./docs/imgs/AttentionViz_Architecture.pdf) for zooming/printing
+- [Editable SVG](./docs/imgs/AttentionViz_Architecture.svg) when updating the diagram source
+
+---
+
 ## Installation
 
 This repo assumes you have already installed [OpenFold and its dependencies](https://openfold.readthedocs.io/en/latest/Installation.html), or you are using CyberShuttle (see `cybershuttle.yml`)
@@ -44,10 +60,10 @@ The notebook `viz_attention_demo_base.ipynb` demonstrates the full visualization
 It performs the following steps:
 
 1. **Runs inference** using OpenFold with precomputed alignments
-2. **Extracts top-k residue–residue attention scores** from each layer and head
+2. **Extracts top-k residue-residue attention scores** from each layer and head
 3. **Saves these scores** to text files
 4. **Visualizes attention**:
-   - As **arc diagrams** (residue–residue attention on the sequence)
+   - As **arc diagrams** (residue-residue attention on the sequence)
    - As **3D PyMOL overlays** (on the predicted structure)
 
 We focus on two attention types:

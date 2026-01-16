@@ -4,6 +4,7 @@ This is a lightweight extension of [OpenFold](https://github.com/aqlaboratory/op
 
 - Arc diagrams (sequence space)
 - 3D PyMOL overlays (structure space)
+- Heatmap grids (all heads at once)
 
 ---
 
@@ -12,6 +13,7 @@ This is a lightweight extension of [OpenFold](https://github.com/aqlaboratory/op
 - Compatible with OpenFold outputs (`.pdb`, attention text dumps)
 - Support for layer- and head-specific visualizations
 - Integrated residue highlighting
+- Cross-head comparison with heatmap grids
 - Notebook-friendly and HPC-friendly workflow
 
 ---
@@ -49,6 +51,7 @@ It performs the following steps:
 4. **Visualizes attention**:
    - As **arc diagrams** (residue–residue attention on the sequence)
    - As **3D PyMOL overlays** (on the predicted structure)
+   - As **heatmap grids** (all heads at once for cross-head comparison)
 
 We focus on two attention types:
 - **MSA Row Attention**
@@ -90,15 +93,120 @@ All heads subplot:
 
 ![triangle_start_subplot](./outputs/attention_images_6KWC_demo_tri_18/tri_start_attention_plots/triangle_start_residue_18_layer_47_6KWC_subplot.png)
 
+---
+
+## Heatmap Visualization
+
+### New Feature: All Heads at Once
+
+The heatmap visualization provides a complementary view to arc diagrams and PyMOL overlays by showing all attention heads simultaneously in a grid format. This enables:
+
+- **Cross-head comparison**: Compare attention patterns across all heads in a single view
+- **Spatial pattern analysis**: Identify hotspots and structural patterns in attention matrices
+- **Global normalization**: Consistent color scaling across heads for fair comparison
+
+### Usage
+
+#### Primary Method: Python Functions
+
+Use the visualization functions directly in Python, same as arc diagrams and PyMOL:
+
+```python
+from visualize_attention_heatmap_utils import plot_all_heads_heatmap, plot_combined_attention_heatmap
+
+# Generate MSA Row attention heatmap
+plot_all_heads_heatmap(
+    attention_dir='./outputs/attention_files_6KWC_demo_tri_18',
+    output_dir='./outputs/heatmaps',
+    protein='6KWC',
+    attention_type='msa_row',
+    layer_idx=47,
+    fasta_path='./examples/monomer/fasta_dir_6KWC/6KWC.fasta',
+    normalization='global',
+    colormap='viridis'
+)
+
+# Generate Triangle Start attention heatmap
+plot_all_heads_heatmap(
+    attention_dir='./outputs/attention_files_6KWC_demo_tri_18',
+    output_dir='./outputs/heatmaps',
+    protein='6KWC',
+    attention_type='triangle_start',
+    layer_idx=47,
+    fasta_path='./examples/monomer/fasta_dir_6KWC/6KWC.fasta',
+    normalization='global',
+    residue_indices=[18, 39, 51]
+)
+
+# Generate combined heatmap (both attention types)
+plot_combined_attention_heatmap(
+    attention_dir='./outputs/attention_files_6KWC_demo_tri_18',
+    output_dir='./outputs/heatmaps',
+    protein='6KWC',
+    layer_idx=47,
+    fasta_path='./examples/monomer/fasta_dir_6KWC/6KWC.fasta',
+    normalization='global',
+    residue_indices=[18, 39]
+)
+```
+
+#### Optional Method: Command Line Interface
+
+For batch processing or shell-based workflows, use the CLI script:
+
+```bash
+# MSA Row attention heatmap
+python scripts/generate_attention_heatmaps.py \
+    --attention_dir ./outputs/attention_files_6KWC_demo_tri_18 \
+    --output_dir ./outputs/heatmaps \
+    --protein 6KWC \
+    --layer 47 \
+    --attention_type msa_row
+
+# Triangle Start attention heatmap
+python scripts/generate_attention_heatmaps.py \
+    --attention_dir ./outputs/attention_files_6KWC_demo_tri_18 \
+    --output_dir ./outputs/heatmaps \
+    --protein 6KWC \
+    --layer 47 \
+    --attention_type triangle_start \
+    --residue_indices 18 39 51
+
+# Combined heatmap (both attention types)
+python scripts/generate_attention_heatmaps.py \
+    --attention_dir ./outputs/attention_files_6KWC_demo_tri_18 \
+    --output_dir ./outputs/heatmaps \
+    --protein 6KWC \
+    --layer 47 \
+    --attention_type combined \
+    --residue_indices 18 39
+```
+
+### Example Outputs
+
+MSA Row Attention Heatmap (Layer 47):
+
+![msa_row_heatmap](./outputs/heatmaps/msa_row_heatmap_layer_47_6KWC.png)
+
+Triangle Start Attention Heatmap (Layer 47, Residue 18):
+
+![triangle_start_heatmap](./outputs/heatmaps/triangle_start_heatmap_layer_47_6KWC.png)
+
+Combined Attention Heatmap (Layer 47):
+
+![combined_heatmap](./outputs/heatmaps/combined_attention_heatmap_layer_47_6KWC.png)
+
+---
 
 ## Acknowledgements
 
 This project is based on [**OpenFold**](https://github.com/aqlaboratory/openfold), an open-source reimplementation of AlphaFold, distributed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 We have extended OpenFold with:
-- Custom visualization tools for attention maps (3D + arc diagrams)
+- Custom visualization tools for attention maps (3D + arc diagrams + heatmaps)
 - Demo scripts and configuration for interactive analysis
 - Modifications to the inference pipeline for simplified usage
+- Heatmap visualization for cross-head attention analysis
 
 This repository includes source code originally developed by the OpenFold contributors. All original rights and attributions are retained in accordance with the Apache 2.0 License.
 

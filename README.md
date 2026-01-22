@@ -6,7 +6,7 @@ This repository includes two components:
 
 ---
 
-Link to Openfold implimentation - README_vizfold_openfold.md
+Link to Openfold implimentation - [README_vizfold_openfold.md](https://github.com/vizfold/vizfold-foundation/blob/main/README_vizfold_openfold.md)
 
 ---
 

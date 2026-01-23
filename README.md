@@ -4,7 +4,7 @@ This repository has two main components:
 
 1. Model inference & feature extraction: Run protein structure prediction models and extract intermediate activations (hidden representations) and attention maps from any chosen layer.
 2. Visualization & analysis: Explore, visualize, and analyze the extracted activations and attention maps.
-3. 
+
 ---
 
 Link to Openfold implimentation - [README_vizfold_openfold.md](https://github.com/vizfold/vizfold-foundation/blob/main/README_vizfold_openfold.md)
